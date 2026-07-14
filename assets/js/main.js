@@ -75,6 +75,7 @@ var UNITS = {
   },
   '8ft': {
     label: '8ft x 6ft 6in storage container',
+    avail: 'Available at our Batley site only',
     pcmExVat: 82.50,
     deposit: 75.00
   }
@@ -96,6 +97,7 @@ function buildQuoteEmail(unitKey, name, location, moveIn) {
     'YOUR QUOTE',
     '----------------------------------------',
     'Unit: ' + u.label,
+    (u.avail ? 'Availability: ' + u.avail : null),
     (location ? 'Preferred site: ' + location : null),
     (moveIn ? 'Preferred move-in date: ' + moveIn : null),
     '',
