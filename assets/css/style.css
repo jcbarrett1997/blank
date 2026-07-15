@@ -219,6 +219,14 @@ a.feature-banner:hover img { transform: scale(1.035); }
 .btn { transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
 .btn-primary:hover { box-shadow: 0 8px 20px rgba(0,163,74,.28); }
 
+/* Locations map (Leaflet) */
+#sites-map { height: 440px; width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); position: relative; z-index: 0; }
+.leaflet-popup-content { font-family: var(--font); }
+.leaflet-popup-content h4 { color: var(--navy); margin-bottom: .25rem; font-size: 1rem; }
+.leaflet-popup-content a.map-link { display: inline-block; margin-top: .35rem; color: var(--green-dark); font-weight: 700; text-decoration: none; }
+.leaflet-popup-content a.map-link:hover { text-decoration: underline; }
+.map-pin { filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+
 /* Real-photo band (image + copy) */
 .photo-band .container { display: grid; grid-template-columns: 1.1fr 1fr; gap: 2.2rem; align-items: center; }
 .photo-band .photo-media img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); }

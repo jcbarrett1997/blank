@@ -7,6 +7,7 @@
 <meta name="description" content="MB Storage locations across West Yorkshire: Batley (containers and warehouses), Liversedge (50 modern 20ft containers) and Brighouse (5 minutes from the town centre).">
 <link rel="canonical" href="https://www.mbstorage.co.uk/locations.html">
 <link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -35,6 +36,17 @@
       <p class="eyebrow">Our Locations</p>
       <h1>Three secure sites across West Yorkshire</h1>
       <p>Every MB Storage site is protected by CCTV, our mobile phone entry system and 24/7 support.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="section-head center">
+        <p class="eyebrow">Find us</p>
+        <h2>Our sites on the map</h2>
+        <p class="lead">Tap a pin to open that site's Google profile for directions, reviews and opening details.</p>
+      </div>
+      <div id="sites-map" role="img" aria-label="Map showing MB Storage locations in Batley, Liversedge and Brighouse"></div>
     </div>
   </section>
 
@@ -127,5 +139,44 @@
 </footer>
 
 <script src="assets/js/main.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+  var el = document.getElementById('sites-map');
+  if (!el || typeof L === 'undefined') return;
+
+  // Approximate coordinates — verify pin positions and adjust [lat, lng] if needed.
+  var sites = [
+    { name: 'MB Storage — Batley',     coords: [53.7055, -1.6185], url: 'https://share.google/FKLlhXwnTdkLFq2XG' },
+    { name: 'MB Storage — Liversedge', coords: [53.7010, -1.6860], url: 'https://share.google/wF9zgcL8YftSkXofP' },
+    { name: 'MB Storage — Brighouse',  coords: [53.7010, -1.7830], url: 'https://share.google/XrDNTsuIEwMxSpYG8' }
+  ];
+
+  var map = L.map('sites-map', { scrollWheelZoom: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Brand-green pin
+  var pin = L.divIcon({
+    className: 'map-pin',
+    html: '<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">' +
+          '<path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.7 23.3 0 15 0z" fill="#00A34A"/>' +
+          '<circle cx="15" cy="15" r="6" fill="#fff"/></svg>',
+    iconSize: [30, 42], iconAnchor: [15, 42], popupAnchor: [0, -38]
+  });
+
+  var group = L.featureGroup();
+  sites.forEach(function (s) {
+    var m = L.marker(s.coords, { icon: pin, title: s.name }).addTo(map);
+    m.bindPopup('<h4>' + s.name + '</h4><a class="map-link" href="' + s.url +
+                '" target="_blank" rel="noopener">View on Google &rarr;</a>');
+    group.addLayer(m);
+  });
+  map.addLayer(group);
+  map.fitBounds(group.getBounds().pad(0.25));
+})();
+</script>
 </body>
 </html>
