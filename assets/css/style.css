@@ -213,6 +213,15 @@ a.feature-banner:hover img { transform: scale(1.035); }
 .btn { transition: transform .15s ease, background .15s ease, box-shadow .15s ease; }
 .btn-primary:hover { box-shadow: 0 8px 20px rgba(0,163,74,.28); }
 
+/* Real-photo band (image + copy) */
+.photo-band .container { display: grid; grid-template-columns: 1.1fr 1fr; gap: 2.2rem; align-items: center; }
+.photo-band .photo-media img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); }
+.photo-band figcaption, .photo-figure figcaption { color: var(--grey); font-size: .88rem; margin-top: .55rem; }
+.photo-figure { max-width: 640px; margin: 0 auto; }
+.photo-figure img { width: 100%; border-radius: var(--radius); box-shadow: var(--shadow); }
+.photo-figure figcaption { text-align: center; }
+@media (max-width: 820px) { .photo-band .container { grid-template-columns: 1fr; } }
+
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
