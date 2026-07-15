@@ -11,9 +11,47 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   initQuoteForm();
+  initContactForm();
   initReveal();
   initCounters();
 });
+
+/* Generic AJAX form submit → serverless function → thank-you page. */
+function ajaxForm(formId, statusId, endpoint) {
+  var form = document.getElementById(formId);
+  if (!form) return;
+  var status = document.getElementById(statusId);
+  var btn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var data = {};
+    new FormData(form).forEach(function (v, k) { data[k] = v; });
+    if (status) { status.className = 'status-msg ok'; status.textContent = 'Sending…'; }
+    if (btn) { btn.disabled = true; }
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Request failed (' + r.status + ')');
+      return r.json();
+    }).then(function () {
+      window.location.href = 'thank-you.html';
+    }).catch(function () {
+      if (status) {
+        status.className = 'status-msg err';
+        status.innerHTML = "Sorry, something went wrong. Please call us on " +
+          "<a href=\"tel:+447375355233\">07375 355233</a> or email " +
+          "<a href=\"mailto:info@mbstorage.co.uk\">info@mbstorage.co.uk</a>.";
+      }
+      if (btn) { btn.disabled = false; }
+    });
+  });
+}
+
+function initContactForm() {
+  ajaxForm('contact-form', 'contact-status', '/.netlify/functions/contact');
+}
 
 var prefersReducedMotion = window.matchMedia &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;

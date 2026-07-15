@@ -96,8 +96,10 @@ var UNITS = {
 
 ## Notes
 
-- The **contact form** (`contact.html`) still uses FormSubmit. If you'd like it to
-  also send from your domain, it can be moved to the same setup — ask and it's a
-  quick addition.
-- On **GitHub Pages** the quote form won't work (no serverless functions there) —
-  the function only runs on Netlify. The rest of the site previews fine anywhere.
+- The **contact form** (`contact.html`) uses the same setup — it posts to
+  `/.netlify/functions/contact`, emails the message to `info@mbstorage.co.uk`,
+  and sends the sender a branded acknowledgement, all from your domain. It uses
+  the same environment variables, so no extra config is needed.
+- On **GitHub Pages** the quote and contact forms won't send (no serverless
+  functions there) — the functions only run on Netlify. The rest of the site
+  previews fine anywhere.

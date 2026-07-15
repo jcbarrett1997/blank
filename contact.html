@@ -56,12 +56,9 @@
       </div>
 
       <div class="mt-2" style="max-width:820px;margin-left:auto;margin-right:auto">
-        <form class="form-card" action="https://formsubmit.co/info@mbstorage.co.uk" method="POST">
+        <form id="contact-form" class="form-card" action="/.netlify/functions/contact" method="POST">
           <h2>Send us a message</h2>
-          <input type="hidden" name="_subject" value="New contact message — mbstorage.co.uk">
-          <input type="hidden" name="_template" value="table">
-          <input type="hidden" name="_next" value="https://www.mbstorage.co.uk/thank-you.html">
-          <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+          <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" aria-hidden="true">
           <div class="form-grid mt-1">
             <div>
               <label for="c-name">Full name *</label>
@@ -77,6 +74,7 @@
             </div>
             <div class="full">
               <button type="submit" class="btn btn-primary" style="width:100%">Send message</button>
+              <div id="contact-status" class="status-msg" role="status"></div>
             </div>
           </div>
         </form>
