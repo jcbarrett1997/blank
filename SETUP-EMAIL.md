@@ -1,7 +1,7 @@
 # Instant quote emails — setup guide
 
 The quote form emails each customer their price **from `@mbstorage.co.uk`** using
-**Resend** (email delivery) + a **Netlify serverless function** (which calculates
+**Mailgun** (email delivery) + a **Netlify serverless function** (which calculates
 the price server-side, so prices are never exposed in the website code).
 
 Nothing secret lives in this repository — the API key is stored on Netlify.
@@ -18,31 +18,34 @@ Nothing secret lives in this repository — the API key is stored on Netlify.
 
 ---
 
-## Step 1 — Resend account + verify the domain
+## Step 1 — Mailgun account + verify the domain
 
-1. Sign up at **https://resend.com** (free tier is plenty for this volume).
-2. **Add Domain** → enter `mbstorage.co.uk`.
-3. Resend shows a set of **DNS records**. These must be added to the
+1. Sign up at **https://mailgun.com**. Choose the **EU region** if offered (you're
+   UK-based) — just note which region you pick, it matters in Step 3.
+2. **Sending → Domains → Add New Domain** → enter **`mbstorage.co.uk`**
+   (the root domain, so emails come from `quotes@mbstorage.co.uk`).
+3. Mailgun shows a set of **DNS records**. These must be added to the
    `mbstorage.co.uk` DNS by whoever manages it. Copy the values **exactly** from
-   the Resend dashboard — they're unique to your domain. They look like this:
+   the Mailgun dashboard — they're unique to your domain. They look like this:
 
    | Type | Name / Host | Value | Purpose |
    |------|-------------|-------|---------|
-   | TXT  | `send` (or as shown) | `v=spf1 include:amazonses.com ~all` (as shown) | SPF |
-   | TXT  | `resend._domainkey` (as shown) | long DKIM key (as shown) | DKIM signing |
-   | MX   | `send` (as shown) | `feedback-smtp.<region>.amazonses.com` (as shown) | bounce handling |
-   | TXT  | `_dmarc` (recommended) | `v=DMARC1; p=none;` | DMARC policy |
+   | TXT  | `mbstorage.co.uk` (as shown) | `v=spf1 include:mailgun.org ~all` (as shown) | SPF |
+   | TXT  | `k1._domainkey` (as shown) | long DKIM key (as shown) | DKIM signing |
+   | MX   | `mbstorage.co.uk` | `mxa.mailgun.org` / `mxb.mailgun.org` (as shown) | receiving/bounces |
+   | CNAME | `email` (as shown) | `mailgun.org` (as shown) | open/click tracking |
 
-   > ⚠️ Use the **exact** names/values Resend gives you — the table above is only
+   > ⚠️ Use the **exact** names/values Mailgun gives you — the table above is only
    > the shape of what to expect. Send those rows to your DNS manager.
-4. Once the records are live, click **Verify** in Resend (can take a few minutes
-   up to a couple of hours to propagate).
+   > Note: if you already receive email on `mbstorage.co.uk`, tell me — we may skip
+   > Mailgun's MX records so it doesn't affect your existing mail.
+4. Once the records are live, click **Verify DNS Settings** in Mailgun (can take a
+   few minutes up to a couple of hours to propagate).
 
-## Step 2 — Resend API key
+## Step 2 — Mailgun API key
 
-1. In Resend → **API Keys → Create API Key** (Sending access is enough).
-2. Copy it (starts with `re_...`). You'll paste it into Netlify next — **do not**
-   put it in the repository.
+1. In Mailgun → your profile / **API keys** → copy your **Sending API key**.
+2. You'll paste it into Netlify next — **do not** put it in the repository.
 
 ## Step 3 — Netlify (hosts the site + the function)
 
@@ -54,13 +57,15 @@ Nothing secret lives in this repository — the API key is stored on Netlify.
 
    | Key | Value |
    |-----|-------|
-   | `RESEND_API_KEY` | the `re_...` key from Step 2 |
+   | `MAILGUN_API_KEY` | the Sending API key from Step 2 |
+   | `MAILGUN_DOMAIN` | `mbstorage.co.uk` |
+   | `MAILGUN_API_BASE` | `https://api.eu.mailgun.net` **(only if you chose the EU region)** — otherwise omit it |
    | `MAIL_FROM` | `MB Storage <quotes@mbstorage.co.uk>` |
    | `MAIL_TO` | `info@mbstorage.co.uk` |
    | `SITE_URL` | `https://www.mbstorage.co.uk` |
 
 3. **Deploy**. Your site goes live on a `*.netlify.app` URL immediately, and the
-   quote form works as soon as the Resend domain is verified.
+   quote form works as soon as the Mailgun domain is verified.
 
 ## Step 4 — Point mbstorage.co.uk at Netlify (when ready to go live)
 
@@ -80,7 +85,7 @@ Hand those to your DNS manager. Netlify then issues a free HTTPS certificate.
 - On the deployed Netlify URL, submit the quote form with your own email.
 - You should receive the branded quote; `info@mbstorage.co.uk` gets the enquiry.
 - If it fails, check **Netlify → Functions → quote → logs**. The usual cause is the
-  Resend domain not being verified yet, or a missing `RESEND_API_KEY`.
+  Mailgun domain not being verified yet, or a missing `MAILGUN_API_KEY` / `MAILGUN_DOMAIN`.
 
 ## Changing prices later
 

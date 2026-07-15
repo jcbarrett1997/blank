@@ -2,15 +2,18 @@
  * MB Storage — instant quote handler (Netlify Function)
  *
  * Receives the quote form, calculates the price SERVER-SIDE (so pricing is
- * never exposed to the browser), then sends two emails via Resend:
+ * never exposed to the browser), then sends two emails via Mailgun:
  *   1. the customer's personalised quote (from @mbstorage.co.uk)
  *   2. a notification to the MB Storage inbox
  *
  * Environment variables (set in the Netlify dashboard — never in the repo):
- *   RESEND_API_KEY   required — your Resend API key
- *   MAIL_FROM        e.g. "MB Storage <quotes@mbstorage.co.uk>"
- *   MAIL_TO          where enquiries are sent, e.g. "info@mbstorage.co.uk"
- *   SITE_URL         e.g. "https://www.mbstorage.co.uk" (used for the logo)
+ *   MAILGUN_API_KEY   required — your Mailgun sending API key
+ *   MAILGUN_DOMAIN    required — the Mailgun domain, e.g. "mbstorage.co.uk"
+ *   MAILGUN_API_BASE  optional — "https://api.eu.mailgun.net" for the EU region
+ *                     (default is the US region "https://api.mailgun.net")
+ *   MAIL_FROM         e.g. "MB Storage <quotes@mbstorage.co.uk>"
+ *   MAIL_TO           where enquiries are sent, e.g. "info@mbstorage.co.uk"
+ *   SITE_URL          e.g. "https://www.mbstorage.co.uk" (used for the logo)
  */
 
 var VAT_RATE = 0.20;
@@ -153,18 +156,29 @@ exports.handler = async function (event) {
   var u = UNITS[d.container_size];
   if (!u) return fail(400, 'Please choose a container size.');
   if (!d.email || String(d.email).indexOf('@') === -1) return fail(400, 'A valid email is required.');
-  if (!process.env.RESEND_API_KEY) return fail(500, 'Email service not configured.');
+  if (!process.env.MAILGUN_API_KEY || !process.env.MAILGUN_DOMAIN) return fail(500, 'Email service not configured.');
 
   var name = (d.name || 'there').toString().trim() || 'there';
   var incVat = u.pcmExVat * (1 + VAT_RATE);
 
-  async function send(payload) {
-    var r = await fetch('https://api.resend.com/emails', {
+  async function send(msg) {
+    var base = process.env.MAILGUN_API_BASE || 'https://api.mailgun.net';
+    var form = new URLSearchParams();
+    form.append('from', msg.from);
+    form.append('to', Array.isArray(msg.to) ? msg.to.join(',') : msg.to);
+    if (msg.reply_to) form.append('h:Reply-To', msg.reply_to);
+    form.append('subject', msg.subject);
+    if (msg.html) form.append('html', msg.html);
+    if (msg.text) form.append('text', msg.text);
+    var r = await fetch(base + '/v3/' + process.env.MAILGUN_DOMAIN + '/messages', {
       method: 'POST',
-      headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: {
+        Authorization: 'Basic ' + Buffer.from('api:' + process.env.MAILGUN_API_KEY).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: form.toString()
     });
-    if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()));
+    if (!r.ok) throw new Error('Mailgun ' + r.status + ': ' + (await r.text()));
     return r.json();
   }
 
