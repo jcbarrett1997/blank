@@ -181,6 +181,12 @@ details p { margin-top: .6rem; color: var(--grey); }
 }
 @keyframes floatBlob { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-26px,22px); } }
 
+/* Homepage hero: stylised (duotone) real-container photo + navy overlay */
+.hero--photo {
+  background: linear-gradient(115deg, rgba(16,42,60,.90) 0%, rgba(22,58,82,.66) 55%, rgba(16,42,60,.85) 100%),
+              url('../img/photos/hero-navy.jpg') center/cover no-repeat;
+}
+
 .hero-inner > * { opacity: 0; transform: translateY(16px); animation: heroIn .7s cubic-bezier(.2,.7,.2,1) forwards; }
 .hero-inner > *:nth-child(1) { animation-delay: .05s; }
 .hero-inner > *:nth-child(2) { animation-delay: .15s; }
