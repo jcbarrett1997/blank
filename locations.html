@@ -162,9 +162,9 @@
 
   // Approximate coordinates — verify pin positions and adjust [lat, lng] if needed.
   var sites = [
-    { name: 'MB Storage — Batley',     coords: [53.7089307269144, -1.618558535607249], url: 'https://share.google/FKLlhXwnTdkLFq2XG' },
-    { name: 'MB Storage — Liversedge', coords: [53.70760098177427, -1.6827819197472276], url: 'https://share.google/wF9zgcL8YftSkXofP' },
-    { name: 'JB Storage Solutions — Brighouse', coords: [53.69737596072216, -1.7719959669653829], url: 'https://share.google/XrDNTsuIEwMxSpYG8' }
+    { name: 'MB Storage — Batley',     coords: [53.7089307269144, -1.618558535607249], url: 'https://share.google/FKLlhXwnTdkLFq2XG', rating: 5.0, reviews: 22 },
+    { name: 'MB Storage — Liversedge', coords: [53.70760098177427, -1.6827819197472276], url: 'https://share.google/wF9zgcL8YftSkXofP', rating: 5.0, reviews: 6 },
+    { name: 'JB Storage Solutions — Brighouse', coords: [53.69737596072216, -1.7719959669653829], url: 'https://share.google/XrDNTsuIEwMxSpYG8', rating: 5.0, reviews: 47 }
   ];
 
   var map = L.map('sites-map', { scrollWheelZoom: false });
@@ -185,8 +185,13 @@
   var group = L.featureGroup();
   sites.forEach(function (s) {
     var m = L.marker(s.coords, { icon: pin, title: s.name }).addTo(map);
-    m.bindPopup('<h4>' + s.name + '</h4><a class="map-link" href="' + s.url +
-                '" target="_blank" rel="noopener">View on Google &rarr;</a>');
+    var pct = (s.rating / 5 * 100) + '%';
+    var html = '<h4>' + s.name + '</h4>' +
+      '<div class="grating"><span class="gstars" style="--pct:' + pct + '"></span>' +
+      '<span class="grating-num">' + s.rating.toFixed(1) + '</span>' +
+      '<span class="grating-count">' + s.reviews + ' Google reviews</span></div>' +
+      '<a class="map-link" href="' + s.url + '" target="_blank" rel="noopener">View on Google &rarr;</a>';
+    m.bindPopup(html);
     group.addLayer(m);
   });
   map.addLayer(group);
