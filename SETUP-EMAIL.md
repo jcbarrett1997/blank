@@ -17,7 +17,7 @@ Nothing secret lives in this repository — the API key is stored on Netlify.
 
 1. Customer submits the quote form → posts to `/.netlify/functions/quote`.
 2. The function (`netlify/functions/quote.js`) works out the price, then sends:
-   - a **branded HTML quote** to the customer (from `quotes@send.mbstorage.co.uk`),
+   - a **branded HTML quote** to the customer (from `quotes@mbstorage.co.uk`),
    - a **notification** to `info@mbstorage.co.uk`.
 3. Customer lands on `thank-you.html`.
 
