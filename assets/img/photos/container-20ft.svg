@@ -3,7 +3,6 @@
 <linearGradient id="gTop" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#5c86a5"/><stop offset="1" stop-color="#40708f"/></linearGradient>
 <linearGradient id="gSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#33648a"/><stop offset="1" stop-color="#20496b"/></linearGradient>
 <linearGradient id="gDoor" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1c4363"/><stop offset="1" stop-color="#122f44"/></linearGradient>
-<linearGradient id="gCast" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b7c4cd"/><stop offset="1" stop-color="#8598a5"/></linearGradient>
 <radialGradient id="gShadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#1f2a33" stop-opacity="0.26"/><stop offset="1" stop-color="#1f2a33" stop-opacity="0"/></radialGradient>
 <marker id="ah" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse"><path d="M1.5,1.5 L8.5,5 L1.5,8.5 z" fill="#5b6b52"/></marker>
 </defs>
@@ -37,12 +36,12 @@
 <rect x="456.5" y="229.5" width="12" height="9" rx="3" fill="#00A34A"/>
 <rect x="501.5" y="229.5" width="12" height="9" rx="3" fill="#00A34A"/>
 <rect x="528.5" y="229.5" width="12" height="9" rx="3" fill="#00A34A"/>
-<rect x="72.0" y="58.0" width="16" height="12" rx="2" fill="url(#gCast)" stroke="#6d8290" stroke-width="1"/>
-<rect x="72.0" y="217.0" width="16" height="12" rx="2" fill="url(#gCast)" stroke="#6d8290" stroke-width="1"/>
-<rect x="402.0" y="144.0" width="16" height="12" rx="2" fill="url(#gCast)" stroke="#6d8290" stroke-width="1"/>
-<rect x="402.0" y="303.0" width="16" height="12" rx="2" fill="url(#gCast)" stroke="#6d8290" stroke-width="1"/>
-<rect x="552.0" y="144.0" width="16" height="12" rx="2" fill="url(#gCast)" stroke="#6d8290" stroke-width="1"/>
-<rect x="552.0" y="303.0" width="16" height="12" rx="2" fill="url(#gCast)" stroke="#6d8290" stroke-width="1"/>
+<g><rect x="75.0" y="60.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="75.0" y="60.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="80.0" cy="64.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="75.0" y="219.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="75.0" y="219.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="80.0" cy="223.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="405.0" y="146.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="405.0" y="146.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="410.0" cy="150.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="405.0" y="305.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="405.0" y="305.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="410.0" cy="309.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="555.0" y="146.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="555.0" y="146.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="560.0" cy="150.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="555.0" y="305.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="555.0" y="305.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="560.0" cy="309.0" rx="2.2" ry="1.3" fill="#081521"/></g>
 <line x1="596" y1="150" x2="596" y2="309" stroke="#5b6b52" stroke-width="1.6" marker-start="url(#ah)" marker-end="url(#ah)"/>
 <g><rect x="555.6" y="216.0" width="80.8" height="27" rx="13.5" fill="#ffffff" stroke="#e2ded4" stroke-width="1.2"/><text x="596.0" y="234.9" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" fill="#22303a" text-anchor="middle">8ft 6in</text></g>
 <line x1="410" y1="343" x2="560" y2="343" stroke="#5b6b52" stroke-width="1.6" marker-start="url(#ah)" marker-end="url(#ah)"/>
