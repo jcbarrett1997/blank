@@ -2,11 +2,10 @@
  * MB Storage — contact form handler (Netlify Function)
  *
  * Sends the message to the MB Storage inbox and a branded acknowledgement to
- * the customer, both from @mbstorage.co.uk via Mailgun.
+ * the customer, both from a verified @mbstorage.co.uk sender via Resend.
  *
  * Uses the same environment variables as the quote function:
- *   MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_API_BASE (optional), MAIL_FROM,
- *   MAIL_TO, SITE_URL
+ *   RESEND_API_KEY, MAIL_FROM, MAIL_TO, SITE_URL
  */
 
 var FROM = process.env.MAIL_FROM || 'MB Storage <quotes@mbstorage.co.uk>';
@@ -70,28 +69,17 @@ exports.handler = async function (event) {
   if (d._honey || d.company) return wantsJson ? json(200, { ok: true }) : redirect();
   if (!d.email || String(d.email).indexOf('@') === -1) return fail(400, 'A valid email is required.');
   if (!d.message || !String(d.message).trim()) return fail(400, 'Please enter a message.');
-  if (!process.env.MAILGUN_API_KEY || !process.env.MAILGUN_DOMAIN) return fail(500, 'Email service not configured.');
+  if (!process.env.RESEND_API_KEY) return fail(500, 'Email service not configured.');
 
   var name = (d.name || 'there').toString().trim() || 'there';
 
   async function send(msg) {
-    var base = process.env.MAILGUN_API_BASE || 'https://api.mailgun.net';
-    var form = new URLSearchParams();
-    form.append('from', msg.from);
-    form.append('to', Array.isArray(msg.to) ? msg.to.join(',') : msg.to);
-    if (msg.reply_to) form.append('h:Reply-To', msg.reply_to);
-    form.append('subject', msg.subject);
-    if (msg.html) form.append('html', msg.html);
-    if (msg.text) form.append('text', msg.text);
-    var r = await fetch(base + '/v3/' + process.env.MAILGUN_DOMAIN + '/messages', {
+    var r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + Buffer.from('api:' + process.env.MAILGUN_API_KEY).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: form.toString()
+      headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(msg)
     });
-    if (!r.ok) throw new Error('Mailgun ' + r.status + ': ' + (await r.text()));
+    if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()));
     return r.json();
   }
 

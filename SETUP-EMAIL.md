@@ -1,8 +1,13 @@
 # Instant quote emails — setup guide
 
 The quote form emails each customer their price **from `@mbstorage.co.uk`** using
-**Mailgun** (email delivery) + a **Netlify serverless function** (which calculates
+**Resend** (email delivery) + a **Netlify serverless function** (which calculates
 the price server-side, so prices are never exposed in the website code).
+
+Resend is used here because your Mailgun account is dedicated to
+`staging.mbstorage.co.uk` (which sends real mail) — a separate Resend account keeps
+the two completely independent, and Resend's free tier suits this volume with no
+card required.
 
 Nothing secret lives in this repository — the API key is stored on Netlify.
 
@@ -12,44 +17,45 @@ Nothing secret lives in this repository — the API key is stored on Netlify.
 
 1. Customer submits the quote form → posts to `/.netlify/functions/quote`.
 2. The function (`netlify/functions/quote.js`) works out the price, then sends:
-   - a **branded HTML quote** to the customer (from `quotes@mbstorage.co.uk`),
+   - a **branded HTML quote** to the customer (from `quotes@send.mbstorage.co.uk`),
    - a **notification** to `info@mbstorage.co.uk`.
 3. Customer lands on `thank-you.html`.
 
 ---
 
-## Step 1 — Mailgun account + verify the sending subdomain
+## Step 1 — Resend account + verify the sending subdomain
 
-> We use a **subdomain** (`mg.mbstorage.co.uk`) for sending. This is Mailgun's
-> recommended setup and, crucially, it keeps your **existing inbox on
-> `mbstorage.co.uk` completely untouched** — all the records below live on the
-> `mg.` subdomain only.
+> We use a **subdomain** (`send.mbstorage.co.uk`) for sending. This keeps your
+> **existing inbox on `mbstorage.co.uk` untouched** *and* stays clear of your
+> Mailgun/`staging.` setup — all the records below live on the `send.` subdomain
+> only. (Pick any label you like — `send` or `mail` — just keep it consistent.)
 
-1. Sign up at **https://mailgun.com**. Choose the **EU region** if offered (you're
-   UK-based) — just note which region you pick, it matters in Step 3.
-2. **Sending → Domains → Add New Domain** → enter **`mg.mbstorage.co.uk`**.
-3. Mailgun shows a set of **DNS records** — all on the `mg.` subdomain. These must
+1. Sign up at **https://resend.com** (free tier, no card needed).
+2. **Domains → Add Domain** → enter **`send.mbstorage.co.uk`**.
+3. Resend shows a set of **DNS records** — all on the `send.` subdomain. These must
    be added to the `mbstorage.co.uk` DNS by whoever manages it. Copy the values
-   **exactly** from the Mailgun dashboard — they're unique to your domain. They
-   look like this:
+   **exactly** from the Resend dashboard — they're unique to your domain. They look
+   like this:
 
    | Type | Name / Host | Value | Purpose |
    |------|-------------|-------|---------|
-   | TXT  | `mg.mbstorage.co.uk` (as shown) | `v=spf1 include:mailgun.org ~all` (as shown) | SPF |
-   | TXT  | `k1._domainkey.mg` (as shown) | long DKIM key (as shown) | DKIM signing |
-   | MX   | `mg.mbstorage.co.uk` | `mxa.mailgun.org` / `mxb.mailgun.org` (as shown) | bounces (subdomain only) |
-   | CNAME | `email.mg` (as shown) | `mailgun.org` (as shown) | open/click tracking |
+   | TXT  | `send` (as shown) | `v=spf1 include:amazonses.com ~all` (as shown) | SPF |
+   | TXT  | `resend._domainkey.send` (as shown) | long DKIM key (as shown) | DKIM signing |
+   | MX   | `send` (as shown) | `feedback-smtp.<region>.amazonses.com` (as shown) | bounces (subdomain only) |
+   | TXT  | `_dmarc.send` (recommended) | `v=DMARC1; p=none;` | DMARC policy |
 
-   > ⚠️ Use the **exact** names/values Mailgun gives you — the table above is only
-   > the shape of what to expect. Because everything is on the `mg.` subdomain,
-   > these records **do not affect your existing `mbstorage.co.uk` email**.
-4. Once the records are live, click **Verify DNS Settings** in Mailgun (can take a
-   few minutes up to a couple of hours to propagate).
+   > ⚠️ Use the **exact** names/values Resend gives you — the table above is only
+   > the shape of what to expect. Because everything is on the `send.` subdomain,
+   > these records **do not affect your existing `mbstorage.co.uk` email** or your
+   > Mailgun `staging.` sending.
+4. Once the records are live, click **Verify** in Resend (a few minutes up to a
+   couple of hours to propagate).
 
-## Step 2 — Mailgun API key
+## Step 2 — Resend API key
 
-1. In Mailgun → your profile / **API keys** → copy your **Sending API key**.
-2. You'll paste it into Netlify next — **do not** put it in the repository.
+1. In Resend → **API Keys → Create API Key** (Sending access is enough).
+2. Copy it (starts with `re_...`). You'll paste it into Netlify next — **do not**
+   put it in the repository.
 
 ## Step 3 — Netlify (hosts the site + the function)
 
@@ -61,15 +67,13 @@ Nothing secret lives in this repository — the API key is stored on Netlify.
 
    | Key | Value |
    |-----|-------|
-   | `MAILGUN_API_KEY` | the Sending API key from Step 2 |
-   | `MAILGUN_DOMAIN` | `mg.mbstorage.co.uk` |
-   | `MAILGUN_API_BASE` | `https://api.eu.mailgun.net` **(only if you chose the EU region)** — otherwise omit it |
-   | `MAIL_FROM` | `MB Storage <quotes@mg.mbstorage.co.uk>` |
+   | `RESEND_API_KEY` | the `re_...` key from Step 2 |
+   | `MAIL_FROM` | `MB Storage <quotes@send.mbstorage.co.uk>` |
    | `MAIL_TO` | `info@mbstorage.co.uk` |
    | `SITE_URL` | `https://www.mbstorage.co.uk` |
 
 3. **Deploy**. Your site goes live on a `*.netlify.app` URL immediately, and the
-   quote form works as soon as the Mailgun domain is verified.
+   quote form works as soon as the Resend domain is verified.
 
 ## Step 4 — Point mbstorage.co.uk at Netlify (when ready to go live)
 
@@ -89,7 +93,7 @@ Hand those to your DNS manager. Netlify then issues a free HTTPS certificate.
 - On the deployed Netlify URL, submit the quote form with your own email.
 - You should receive the branded quote; `info@mbstorage.co.uk` gets the enquiry.
 - If it fails, check **Netlify → Functions → quote → logs**. The usual cause is the
-  Mailgun domain not being verified yet, or a missing `MAILGUN_API_KEY` / `MAILGUN_DOMAIN`.
+  Resend domain not being verified yet, or a missing `RESEND_API_KEY`.
 
 ## Changing prices later
 
