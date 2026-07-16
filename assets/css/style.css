@@ -117,6 +117,20 @@ fieldset { border: 0; }
 .quote-note { display: flex; gap: .8rem; align-items: flex-start; background: var(--green-tint); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1.4rem; color: var(--ink); }
 .quote-note .icon { font-size: 1.3rem; }
 
+/* ---------- Flexibility band ---------- */
+.flex-band { background: var(--green-tint); }
+.flex-band-inner { display: flex; align-items: center; gap: 1.8rem; }
+.flex-band .fb-icon { font-size: 2.8rem; line-height: 1; flex-shrink: 0; }
+.flex-band .eyebrow { color: var(--green-dark); }
+.flex-band h2 { color: var(--navy); margin: 0 0 .5rem; }
+.flex-band p { margin: 0; color: var(--ink); max-width: 760px; }
+.flex-band .fb-points { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: 1rem 0 0; padding: 0; list-style: none; }
+.flex-band .fb-points li { font-weight: 700; color: var(--green-dark); font-size: .95rem; }
+.flex-band .fb-points li::before { content: "✓ "; color: var(--green); font-weight: 800; }
+@media (max-width: 640px) {
+  .flex-band-inner { flex-direction: column; align-items: flex-start; gap: 1rem; }
+}
+
 /* ---------- Locations ---------- */
 .location-card address { font-style: normal; color: var(--grey); margin: .4rem 0 .8rem; }
 

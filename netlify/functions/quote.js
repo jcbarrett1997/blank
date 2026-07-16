@@ -190,6 +190,10 @@ function customerHtml(name, u, incVat, d) {
         '</table>' +
         '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found.</p>' +
       '</div>' +
+      '<div style="background:#e9eff4;border-radius:12px;padding:14px 18px;margin-bottom:22px">' +
+        '<p style="margin:0 0 3px;font-size:14px;color:#1E4C6B;font-weight:700">Flexible - no long-term contract</p>' +
+        '<p style="margin:0;font-size:13px;color:#5b5648;line-height:1.5">Hire is rolling and monthly with a one-month minimum. Stay as long or as little as you like - and if you ever need to leave, it is just 14 days\' notice. You are never tied in.</p>' +
+      '</div>' +
       '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">Pay upfront and save</p>' +
       '<p style="margin:0 0 12px;font-size:14px;color:#5b5648;line-height:1.5">Lock in your rate and skip the monthly admin - the longer you pay upfront, the more you save.</p>' +
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px"><tr>' + offerCards + '</tr></table>' +
@@ -231,6 +235,8 @@ function customerText(name, u, incVat, d) {
     '(' + money(incVat) + ' including VAT)', '',
     'Refundable deposit: ' + money(u.deposit),
     'Your deposit is refunded in full when you leave, provided the unit is left as it was found.', '',
+    'FLEXIBLE - NO LONG-TERM CONTRACT', '----------------------------------------',
+    'Hire is rolling and monthly with a one-month minimum. Stay as long or as little as you like, and if you ever need to leave it is just 14 days notice. You are never tied in.', '',
     'PAY UPFRONT AND SAVE', '----------------------------------------',
     'Lock in your rate and skip the monthly admin - the longer you pay upfront, the more you save.',
   ].concat(offerLines).concat([
