@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 460" role="img" aria-label="8ft by 6ft 6in storage container with double doors on the front">
+<defs>
+<linearGradient id="gTop" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="#5c86a5"/><stop offset="1" stop-color="#40708f"/></linearGradient>
+<linearGradient id="gSide" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#33648a"/><stop offset="1" stop-color="#20496b"/></linearGradient>
+<linearGradient id="gDoor" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1c4363"/><stop offset="1" stop-color="#122f44"/></linearGradient>
+<radialGradient id="gShadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#1f2a33" stop-opacity="0.26"/><stop offset="1" stop-color="#1f2a33" stop-opacity="0"/></radialGradient>
+<marker id="ah" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse"><path d="M1.5,1.5 L8.5,5 L1.5,8.5 z" fill="#5b6b52"/></marker>
+</defs>
+<ellipse cx="317" cy="322" rx="295" ry="30" fill="url(#gShadow)"/>
+<polygon points="392.0,150.0 560.0,150.0 410.0,104.0 242.0,104.0" fill="url(#gTop)"/>
+<polygon points="392.0,150.0 242.0,104.0 242.0,254.0 392.0,300.0" fill="url(#gSide)"/>
+<line x1="367.0" y1="142.3" x2="367.0" y2="292.3" stroke="#0f3149" stroke-opacity="0.32" stroke-width="3.5"/>
+<line x1="342.0" y1="134.7" x2="342.0" y2="284.7" stroke="#0f3149" stroke-opacity="0.32" stroke-width="3.5"/>
+<line x1="317.0" y1="127.0" x2="317.0" y2="277.0" stroke="#0f3149" stroke-opacity="0.32" stroke-width="3.5"/>
+<line x1="292.0" y1="119.3" x2="292.0" y2="269.3" stroke="#0f3149" stroke-opacity="0.32" stroke-width="3.5"/>
+<line x1="267.0" y1="111.7" x2="267.0" y2="261.7" stroke="#0f3149" stroke-opacity="0.32" stroke-width="3.5"/>
+<polyline points="242.0,104.0 392.0,150.0 560.0,150.0" fill="none" stroke="#7ba0bc" stroke-width="1.6" stroke-opacity="0.75"/>
+<polygon points="392.0,150.0 560.0,150.0 560.0,300.0 392.0,300.0" fill="url(#gDoor)"/>
+<line x1="476.0" y1="156" x2="476.0" y2="294" stroke="#0b2334" stroke-width="2.5"/>
+<rect x="419.0" y="160" width="3.2" height="130" rx="1.6" fill="#c6d2db"/>
+<rect x="419.0" y="160" width="1.3" height="130" fill="#e8eef3"/>
+<rect x="449.2" y="160" width="3.2" height="130" rx="1.6" fill="#c6d2db"/>
+<rect x="449.2" y="160" width="1.3" height="130" fill="#e8eef3"/>
+<rect x="499.6" y="160" width="3.2" height="130" rx="1.6" fill="#c6d2db"/>
+<rect x="499.6" y="160" width="1.3" height="130" fill="#e8eef3"/>
+<rect x="529.8" y="160" width="3.2" height="130" rx="1.6" fill="#c6d2db"/>
+<rect x="529.8" y="160" width="1.3" height="130" fill="#e8eef3"/>
+<rect x="414.6" y="225.0" width="12" height="9" rx="3" fill="#00A34A"/>
+<rect x="444.8" y="225.0" width="12" height="9" rx="3" fill="#00A34A"/>
+<rect x="495.2" y="225.0" width="12" height="9" rx="3" fill="#00A34A"/>
+<rect x="525.4" y="225.0" width="12" height="9" rx="3" fill="#00A34A"/>
+<g><rect x="237.0" y="100.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="237.0" y="100.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="242.0" cy="104.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="237.0" y="250.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="237.0" y="250.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="242.0" cy="254.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="387.0" y="146.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="387.0" y="146.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="392.0" cy="150.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="387.0" y="296.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="387.0" y="296.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="392.0" cy="300.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="555.0" y="146.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="555.0" y="146.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="560.0" cy="150.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<g><rect x="555.0" y="296.2" width="10" height="7.5" rx="1.3" fill="#152c40" stroke="#081521" stroke-width="0.8"/><rect x="555.0" y="296.2" width="10" height="3.0" rx="1.3" fill="#4d7996" opacity="0.5"/><ellipse cx="560.0" cy="300.0" rx="2.2" ry="1.3" fill="#081521"/></g>
+<line x1="596" y1="150" x2="596" y2="300" stroke="#5b6b52" stroke-width="1.6" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<g><rect x="555.6" y="211.5" width="80.8" height="27" rx="13.5" fill="#ffffff" stroke="#e2ded4" stroke-width="1.2"/><text x="596.0" y="230.4" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" fill="#22303a" text-anchor="middle">6ft 4in</text></g>
+<line x1="392" y1="334" x2="560" y2="334" stroke="#5b6b52" stroke-width="1.6" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<g><rect x="406.2" y="320.5" width="139.6" height="27" rx="13.5" fill="#ffffff" stroke="#e2ded4" stroke-width="1.2"/><text x="476.0" y="339.4" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" fill="#22303a" text-anchor="middle">6ft 6in (2.0m)</text></g>
+<line x1="386.0" y1="336.0" x2="236.0" y2="290.0" stroke="#5b6b52" stroke-width="1.6" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<g><rect x="258.0" y="299.5" width="106.0" height="27" rx="13.5" fill="#ffffff" stroke="#e2ded4" stroke-width="1.2"/><text x="311.0" y="318.4" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" fill="#22303a" text-anchor="middle">8ft (2.4m)</text></g>
+</svg>

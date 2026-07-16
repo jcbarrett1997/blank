@@ -1,0 +1,10 @@
+# Netlify configuration for the MB Storage site
+# Static site served from the repo root; the quote handler runs as a function.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Node 18+ gives the built-in fetch() used by the quote function
+[functions]
+  node_bundler = "esbuild"

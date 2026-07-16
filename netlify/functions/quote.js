@@ -1,0 +1,272 @@
+/*
+ * MB Storage - instant quote handler (Netlify Function)
+ *
+ * Receives the quote form, calculates the price SERVER-SIDE (so pricing is
+ * never exposed to the browser), then sends two emails:
+ *   1. the customer's personalised quote (from a verified @mbstorage.co.uk sender)
+ *   2. a notification to the MB Storage inbox
+ *
+ * Works with EITHER email provider - set whichever provider's variables in the
+ * Netlify dashboard (never in the repo):
+ *
+ *   Mailgun:  MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_API_BASE (optional, use
+ *             "https://api.eu.mailgun.net" for the EU region)
+ *   Resend:   RESEND_API_KEY
+ *
+ *   Shared:   MAIL_FROM  e.g. "MB Storage <quotes@mbstorage.co.uk>"
+ *             MAIL_TO    where enquiries are sent, e.g. "info@mbstorage.co.uk"
+ *             SITE_URL   e.g. "https://www.mbstorage.co.uk" (used for the logo)
+ */
+
+var VAT_RATE = 0.20;
+var UNITS = {
+  '20ft': { label: '20ft × 8ft storage container', sqft: '≈160 sq ft', pcmExVat: 160.00, deposit: 150.00, avail: 'Available at all our sites' },
+  '8ft':  { label: '8ft × 6ft 6in storage container', sqft: '≈52 sq ft', pcmExVat: 82.50, deposit: 75.00, avail: 'Available at our Batley site only' }
+};
+
+var FROM = process.env.MAIL_FROM || 'MB Storage <quotes@mbstorage.co.uk>';
+var TO   = process.env.MAIL_TO   || 'info@mbstorage.co.uk';
+var SITE = (process.env.SITE_URL || 'https://www.mbstorage.co.uk').replace(/\/$/, '');
+
+var PREPAY_OFFERS = [
+  { months: 6, discount: 0.05, label: '6 months upfront' },
+  { months: 12, discount: 0.10, label: '12 months upfront' }
+];
+
+function money(n) { return '£' + n.toFixed(2); }
+
+function prepayOffers(u) {
+  return PREPAY_OFFERS.map(function (o) {
+    var fullExVat = u.pcmExVat * o.months;
+    var payExVat = fullExVat * (1 - o.discount);
+    var payIncVat = payExVat * (1 + VAT_RATE);
+    var saveExVat = fullExVat - payExVat;
+    var saveIncVat = saveExVat * (1 + VAT_RATE);
+    return {
+      months: o.months, label: o.label, pct: Math.round(o.discount * 100),
+      payExVat: payExVat, payIncVat: payIncVat, saveExVat: saveExVat, saveIncVat: saveIncVat
+    };
+  });
+}
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function parseBody(event) {
+  var raw = event.body || '';
+  if (event.isBase64Encoded) raw = Buffer.from(raw, 'base64').toString('utf8');
+  var ctype = (event.headers['content-type'] || event.headers['Content-Type'] || '').toLowerCase();
+  if (ctype.indexOf('application/json') !== -1) {
+    return { data: JSON.parse(raw || '{}'), json: true };
+  }
+  var out = {}; new URLSearchParams(raw).forEach(function (v, k) { out[k] = v; });
+  return { data: out, json: false };
+}
+
+/* Returns an async send(msg) using whichever provider is configured.
+   msg = { from, to:[..], reply_to, subject, html, text } */
+function makeSender() {
+  if (process.env.RESEND_API_KEY) {
+    return async function (msg) {
+      var r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg)
+      });
+      if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()));
+      return r.json();
+    };
+  }
+  return async function (msg) {
+    var base = process.env.MAILGUN_API_BASE || 'https://api.mailgun.net';
+    var form = new URLSearchParams();
+    form.append('from', msg.from);
+    form.append('to', Array.isArray(msg.to) ? msg.to.join(',') : msg.to);
+    if (msg.reply_to) form.append('h:Reply-To', msg.reply_to);
+    form.append('subject', msg.subject);
+    if (msg.html) form.append('html', msg.html);
+    if (msg.text) form.append('text', msg.text);
+    var r = await fetch(base + '/v3/' + process.env.MAILGUN_DOMAIN + '/messages', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from('api:' + process.env.MAILGUN_API_KEY).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: form.toString()
+    });
+    if (!r.ok) throw new Error('Mailgun ' + r.status + ': ' + (await r.text()));
+    return r.json();
+  };
+}
+
+function customerHtml(name, u, incVat, d) {
+  var row = function (label, val) {
+    return '<tr><td style="padding:6px 0;color:#5b5648;font-size:14px">' + esc(label) +
+           '</td><td style="padding:6px 0;color:#22303a;font-size:14px;font-weight:600;text-align:right">' + esc(val) + '</td></tr>';
+  };
+  var extra = '';
+  if (d.preferred_site) extra += row('Preferred site', d.preferred_site);
+  if (d.move_in_date)   extra += row('Preferred move-in date', d.move_in_date);
+
+  var offers = prepayOffers(u);
+  var offerCards = offers.map(function (o, i) {
+    var best = i === offers.length - 1;
+    return '' +
+      '<td width="50%" valign="top" style="padding:' + (i === 0 ? '0 8px 0 0' : '0 0 0 8px') + '">' +
+        '<div style="border:2px solid ' + (best ? '#00A34A' : '#e4e1da') + ';border-radius:12px;padding:16px 14px;position:relative;' + (best ? 'background:#f0faf4' : '') + '">' +
+          (best ? '<div style="position:absolute;top:-11px;left:14px;background:#00A34A;color:#fff;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px">Best value</div>' : '') +
+          '<p style="margin:6px 0 2px;font-size:13px;color:#5b5648;font-weight:600">' + esc(o.label) + '</p>' +
+          '<p style="margin:0 0 6px;font-size:22px;font-weight:800;color:#1E4C6B">Save ' + o.pct + '%</p>' +
+          '<p style="margin:0 0 2px;font-size:13px;color:#22303a">Pay ' + money(o.payIncVat) + ' <span style="color:#5b5648;font-weight:400">(inc. VAT)</span></p>' +
+          '<p style="margin:0;font-size:12px;color:#008a3f;font-weight:700">You save ' + money(o.saveIncVat) + '</p>' +
+        '</div>' +
+      '</td>';
+  }).join('');
+
+  return '' +
+  '<div style="background:#f2f5f8;padding:24px 0;font-family:Segoe UI,Arial,sans-serif">' +
+  '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
+  '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4e1da">' +
+    '<tr><td style="background:#ffffff;padding:22px 28px" align="left">' +
+      '<img src="' + SITE + '/assets/img/logo-landscape@4x.png" alt="MB Storage" height="44" style="height:44px;display:block">' +
+    '</td></tr>' +
+    '<tr><td style="height:5px;background:#00A34A"></td></tr>' +
+    '<tr><td style="padding:28px">' +
+      '<p style="margin:0 0 12px;font-size:16px;color:#22303a">Hi ' + esc(name) + ',</p>' +
+      '<p style="margin:0 0 20px;font-size:15px;color:#5b5648;line-height:1.6">Great news - we have space ready for you. Here is your personalised quote, straight away and with no obligation.</p>' +
+      '<div style="background:#f7f6f3;border:1px solid #e4e1da;border-radius:12px;padding:18px 20px;margin-bottom:20px">' +
+        '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:700">Your quote</p>' +
+        '<p style="margin:0 0 2px;font-size:18px;font-weight:800;color:#1E4C6B">' + esc(u.label) + '</p>' +
+        '<p style="margin:0 0 12px;font-size:13px;color:#5b5648;font-weight:600">' + esc(u.sqft) + ' of floor space</p>' +
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' +
+          row('Availability', u.avail) + extra +
+          '<tr><td colspan="2" style="border-top:1px solid #e4e1da;padding-top:10px"></td></tr>' +
+          row('Monthly rental', money(u.pcmExVat) + ' + VAT') +
+          row('Including VAT', money(incVat) + ' per month') +
+          row('Refundable deposit', money(u.deposit)) +
+        '</table>' +
+        '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found.</p>' +
+      '</div>' +
+      '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">Pay upfront and save</p>' +
+      '<p style="margin:0 0 12px;font-size:14px;color:#5b5648;line-height:1.5">Lock in your rate and skip the monthly admin - the longer you pay upfront, the more you save.</p>' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px"><tr>' + offerCards + '</tr></table>' +
+      '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">Included with every unit</p>' +
+      '<ul style="margin:0 0 20px;padding-left:18px;color:#5b5648;font-size:14px;line-height:1.7">' +
+        '<li>High-quality padlock provided</li>' +
+        '<li>24/7 CCTV with motion-sensing cameras</li>' +
+        '<li>Mobile phone entry - open the gates from your phone</li>' +
+        '<li>Round-the-clock support</li>' +
+      '</ul>' +
+      '<a href="tel:+447375355233" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a>' +
+      '<p style="margin:22px 0 0;font-size:14px;color:#5b5648;line-height:1.6">Spaces like this don\'t hang around long. Reply to this email or give us a call and we\'ll get you moved in - often the same day.</p>' +
+    '</td></tr>' +
+    '<tr><td style="background:#22190A;padding:18px 28px;color:#cfc9bd;font-size:12px">' +
+      'MB Storage &middot; <a href="tel:+447375355233" style="color:#cfc9bd">07375 355233</a> &middot; ' +
+      '<a href="mailto:info@mbstorage.co.uk" style="color:#cfc9bd">info@mbstorage.co.uk</a> &middot; ' +
+      '<a href="' + SITE + '" style="color:#cfc9bd">mbstorage.co.uk</a>' +
+    '</td></tr>' +
+  '</table></td></tr></table></div>';
+}
+
+function customerText(name, u, incVat, d) {
+  var offers = prepayOffers(u);
+  var offerLines = [];
+  offers.forEach(function (o) {
+    offerLines.push(o.label + ': SAVE ' + o.pct + '% - pay ' + money(o.payIncVat) + ' (inc. VAT), you save ' + money(o.saveIncVat));
+  });
+
+  var lines = [
+    'Hi ' + name + ',', '',
+    'Great news - we have space ready for you. Here is your personalised quote, straight away and with no obligation.', '',
+    'YOUR QUOTE', '----------------------------------------',
+    'Unit: ' + u.label,
+    'Size: ' + u.sqft + ' of floor space',
+    'Availability: ' + u.avail,
+    (d.preferred_site ? 'Preferred site: ' + d.preferred_site : null),
+    (d.move_in_date ? 'Preferred move-in date: ' + d.move_in_date : null), '',
+    'Monthly rental: ' + money(u.pcmExVat) + ' + VAT per calendar month',
+    '(' + money(incVat) + ' including VAT)', '',
+    'Refundable deposit: ' + money(u.deposit),
+    'Your deposit is refunded in full when you leave, provided the unit is left as it was found.', '',
+    'PAY UPFRONT AND SAVE', '----------------------------------------',
+    'Lock in your rate and skip the monthly admin - the longer you pay upfront, the more you save.',
+  ].concat(offerLines).concat([
+    '', 'INCLUDED WITH EVERY UNIT', '----------------------------------------',
+    '- High-quality padlock provided',
+    '- 24/7 CCTV with motion-sensing cameras',
+    '- Mobile phone entry - open the gates from your phone',
+    '- Round-the-clock support', '',
+    "Spaces like this don't hang around long. Reply to this email or call 07375 355233 and we'll get you moved in - often the same day.", '',
+    'Kind regards,', 'MB Storage',
+    '07375 355233 | info@mbstorage.co.uk | mbstorage.co.uk'
+  ]);
+  return lines.filter(function (l) { return l !== null; }).join('\n');
+}
+
+function notifyHtml(u, d) {
+  var row = function (k, v) {
+    return '<tr><td style="padding:5px 12px 5px 0;color:#5b5648;font-size:14px">' + esc(k) +
+           '</td><td style="padding:5px 0;color:#22303a;font-size:14px;font-weight:600">' + esc(v || ' - ') + '</td></tr>';
+  };
+  return '<div style="font-family:Segoe UI,Arial,sans-serif;color:#22303a">' +
+    '<h2 style="color:#1E4C6B">New quote / booking request</h2>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0">' +
+      row('Name', d.name) + row('Email', d.email) + row('Phone', d.phone) +
+      row('Container', u.label + ' (' + u.sqft + ')') +
+      row('Quote', money(u.pcmExVat) + ' + VAT pcm, deposit ' + money(u.deposit)) +
+      row('Preferred site', d.preferred_site) +
+      row('Move-in date', d.move_in_date) +
+      row('Storing', d.storing) +
+    '</table></div>';
+}
+
+function json(status, obj) {
+  return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
+}
+
+exports.handler = async function (event) {
+  if (event.httpMethod !== 'POST') return json(405, { ok: false, error: 'Method not allowed' });
+
+  var parsed;
+  try { parsed = parseBody(event); } catch (e) { return json(400, { ok: false, error: 'Bad request' }); }
+  var d = parsed.data || {};
+  var wantsJson = parsed.json;
+  var redirect = function () { return { statusCode: 303, headers: { Location: '/thank-you.html' }, body: '' }; };
+  var fail = function (code, msg) { return wantsJson ? json(code, { ok: false, error: msg }) : redirect(); };
+
+  // Honeypot - silently succeed for bots
+  if (d._honey || d.company) return wantsJson ? json(200, { ok: true }) : redirect();
+
+  var u = UNITS[d.container_size];
+  if (!u) return fail(400, 'Please choose a container size.');
+  if (!d.email || String(d.email).indexOf('@') === -1) return fail(400, 'A valid email is required.');
+  if (!process.env.RESEND_API_KEY && !process.env.MAILGUN_API_KEY) return fail(500, 'Email service not configured.');
+
+  var name = (d.name || 'there').toString().trim() || 'there';
+  var incVat = u.pcmExVat * (1 + VAT_RATE);
+
+  var send = makeSender();
+
+  try {
+    // 1) Customer quote
+    await send({
+      from: FROM, to: [d.email], reply_to: TO,
+      subject: 'Your MB Storage quote - save up to 10% paying upfront',
+      html: customerHtml(name, u, incVat, d),
+      text: customerText(name, u, incVat, d)
+    });
+    // 2) Internal notification
+    await send({
+      from: FROM, to: [TO], reply_to: d.email,
+      subject: 'New quote/booking request - ' + name,
+      html: notifyHtml(u, d)
+    });
+  } catch (err) {
+    console.error(err);
+    return fail(502, 'Could not send email. Please try again.');
+  }
+
+  return wantsJson ? json(200, { ok: true }) : redirect();
+};
