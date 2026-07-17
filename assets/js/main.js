@@ -46,7 +46,8 @@ function initBookingForm() {
 
   // Pre-fill from the quote email's "Book online now" link
   var params = new URLSearchParams(window.location.search);
-  [['site', 'b-site'], ['size', 'b-size'], ['name', 'b-name'], ['email', 'b-email'], ['phone', 'b-phone']].forEach(function (pair) {
+  [['site', 'b-site'], ['size', 'b-size'], ['name', 'b-name'], ['email', 'b-email'], ['phone', 'b-phone'],
+   ['move_in_date', 'b-date'], ['payment_preference', 'b-paypref']].forEach(function (pair) {
     var val = params.get(pair[0]);
     var el = document.getElementById(pair[1]);
     if (!val || !el) return;

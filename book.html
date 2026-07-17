@@ -91,6 +91,15 @@
             <input id="b-date" type="date" name="move_in_date">
             <p class="hint">Book up to 3 days ahead - moving in later than that? <a href="contact.html">Get in touch</a> or call <a href="tel:+447375355233">07375 355233</a> and we'll see what we can arrange.</p>
           </div>
+          <div>
+            <label for="b-paypref">How would you like to pay? *</label>
+            <select id="b-paypref" name="payment_preference" required>
+              <option value="Monthly" selected>Monthly (rolling)</option>
+              <option value="6 months upfront">6 months upfront - save 5%</option>
+              <option value="12 months upfront">12 months upfront - save 10%</option>
+            </select>
+            <p class="hint">Today you still only pay the deposit - your choice is reflected in your first invoice.</p>
+          </div>
           <div class="full">
             <label for="b-storing">What will you be storing?</label>
             <textarea id="b-storing" name="storing" rows="3" placeholder="e.g. household furniture during a move, business stock, tools…"></textarea>
@@ -168,7 +177,6 @@
         <h4>Get Started</h4>
         <ul>
           <li><a href="quote.html">Instant Quote</a></li>
-          <li><a href="book.html">Book Online</a></li>
           <li><a href="contact.html">Contact Us</a></li>
         </ul>
       </div>

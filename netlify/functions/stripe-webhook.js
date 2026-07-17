@@ -98,6 +98,7 @@ function customerHtml(name, m, amount) {
   };
   var extra = '';
   if (m.move_in_date) extra += row('Preferred move-in date', m.move_in_date);
+  if (m.payment_preference) extra += row('Payment preference', m.payment_preference);
 
   return '' +
   '<div style="background:#f2f5f8;padding:24px 0;font-family:Segoe UI,Arial,sans-serif">' +
@@ -148,6 +149,7 @@ function customerText(name, m, amount) {
     'Unit: ' + (m.unitLabel || m.container_size),
     'Site: ' + (m.site || '-'),
     (m.move_in_date ? 'Preferred move-in date: ' + m.move_in_date : null),
+    (m.payment_preference ? 'Payment preference: ' + m.payment_preference + ' (reflected in your first invoice)' : null),
     'Deposit paid: ' + amount, '',
     'Your deposit is refunded in full when you leave, provided the unit is left as it was found.', '',
     'ONE STEP LEFT BEFORE MOVE-IN', '----------------------------------------',
@@ -178,6 +180,7 @@ function notifyHtml(m, email, amount) {
       row('Site', m.site) +
       row('Move-in date', m.move_in_date) +
       row('Storing', m.storing) +
+      row('Payment preference', m.payment_preference) +
       row('Deposit paid', amount) +
       row('Agreed to T&Cs', m.terms_agreed) +
     '</table></div>';
