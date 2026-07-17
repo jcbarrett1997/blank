@@ -196,13 +196,15 @@ async function syncToQuickBooks(m, email, s) {
   var company = String(m.site || '').toLowerCase();
   if (company !== 'batley' && company !== 'liversedge') return;
 
+  var unitLabel = m.unitLabel || m.container_size;
   await qb.recordSalesReceipt(company, {
     name: m.name,
     email: email,
     phone: m.phone,
     depositAmount: parseFloat(m.deposit_amount_gbp || '0') || 0,
     rentAmount: parseFloat(m.rent_amount_gbp || '0') || 0,
-    rentLabel: 'First rent payment (' + (m.rent_period || 'first period') + ')',
+    depositLabel: 'Refundable deposit - ' + unitLabel,
+    rentLabel: 'First rent payment (' + (m.rent_period || 'first period') + ') - ' + unitLabel,
     txnDate: new Date().toISOString().slice(0, 10),
     reference: s.id || s.payment_intent || 'Stripe'
   });
