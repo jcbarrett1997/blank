@@ -151,6 +151,52 @@ function bookingLive() {
   return v === 'true' || v === 'yes' || v === '1' || v === 'on';
 }
 
+/* How many units are free for this quote's size, across the customer's
+   preferred site(s). Reads the same availability sheet the booking page
+   uses. Returns null when unknown (sheet unset/unreachable) - fail soft. */
+async function unitsFreeFor(d) {
+  var url = process.env.AVAILABILITY_SHEET_CSV_URL;
+  if (!url) return null;
+  try {
+    var r = await fetch(url, { redirect: 'follow' });
+    if (!r.ok) return null;
+    var rows = (await r.text()).split(/\r?\n/).map(function (l) {
+      return l.split(',').map(function (c) { return c.replace(/^"|"$/g, '').trim().toLowerCase(); });
+    });
+    var head = rows[0], iSite = head.indexOf('site'), iSize = head.indexOf('size'), iFree = head.indexOf('units_free');
+    if (iSite === -1 || iSize === -1 || iFree === -1) return null;
+    var size = (d.container_size || '').toLowerCase();
+    var pref = (d.preferred_site || '').toLowerCase();
+    var sites = (pref === 'batley' || pref === 'liversedge') ? [pref]
+              : (size === '8ft' ? ['batley'] : ['batley', 'liversedge']);
+    var total = 0, found = false;
+    rows.slice(1).forEach(function (row) {
+      if (row[iSize] !== size || sites.indexOf(row[iSite]) === -1) return;
+      var n = parseInt(row[iFree], 10);
+      if (!isNaN(n)) { total += Math.max(0, n); found = true; }
+    });
+    return found ? total : null;
+  } catch (e) { console.error(e); return null; }
+}
+
+/* Which booking panel the quote email should show:
+   'book'  - bookable now, show the Book online button
+   'later' - their move-in date is beyond the 3-day booking window
+   'full'  - their size is sold out at their preferred site(s)
+   'off'   - online booking not enabled */
+async function bookingState(d) {
+  if (!bookingUrl(d)) return 'off';
+  if (d.move_in_date) {
+    var picked = new Date(d.move_in_date + 'T12:00:00');
+    var latest = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    latest.setHours(23, 59, 59, 999);
+    if (!isNaN(picked.getTime()) && picked > latest) return 'later';
+  }
+  var free = await unitsFreeFor(d);
+  if (free !== null && free <= 0) return 'full';
+  return 'book';
+}
+
 function bookingUrl(d) {
   if (!bookingLive()) return null;
   var q = new URLSearchParams();
@@ -163,7 +209,7 @@ function bookingUrl(d) {
   return SITE + '/book.html?' + q.toString();
 }
 
-function customerHtml(name, u, incVat, d) {
+function customerHtml(name, u, incVat, d, state) {
   var row = function (label, val) {
     return '<tr><td style="padding:6px 0;color:#5b5648;font-size:14px">' + esc(label) +
            '</td><td style="padding:6px 0;color:#22303a;font-size:14px;font-weight:600;text-align:right">' + esc(val) + '</td></tr>';
@@ -209,7 +255,7 @@ function customerHtml(name, u, incVat, d) {
           row('Including VAT', money(incVat) + ' per month') +
           row('Refundable deposit', money(u.deposit)) +
         '</table>' +
-        '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found.</p>' +
+        '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found. This quote is valid for 30 days.</p>' +
       '</div>' +
       '<div style="background:#e9eff4;border-radius:12px;padding:14px 18px;margin-bottom:22px">' +
         '<p style="margin:0 0 3px;font-size:14px;color:#1E4C6B;font-weight:700">Flexible - no long-term contract</p>' +
@@ -217,7 +263,8 @@ function customerHtml(name, u, incVat, d) {
       '</div>' +
       '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">Pay upfront and save</p>' +
       '<p style="margin:0 0 12px;font-size:14px;color:#5b5648;line-height:1.5">Lock in your rate and skip the monthly admin - the longer you pay upfront, the more you save.</p>' +
-      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px"><tr>' + offerCards + '</tr></table>' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px"><tr>' + offerCards + '</tr></table>' +
+      '<p style="margin:0 0 22px;font-size:13px;color:#5b5648;line-height:1.5">Fancy an upfront saving? You still only pay the deposit to book - just choose your payment preference when booking (or mention it when we confirm) and we\'ll reflect it in your first invoice.</p>' +
       '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">Included with every unit</p>' +
       '<ul style="margin:0 0 20px;padding-left:18px;color:#5b5648;font-size:14px;line-height:1.7">' +
         '<li>High-quality padlock provided</li>' +
@@ -225,18 +272,28 @@ function customerHtml(name, u, incVat, d) {
         '<li>Mobile phone entry - open the gates from your phone</li>' +
         '<li>Round-the-clock support</li>' +
       '</ul>' +
-      (bookingUrl(d) ?
+      (state === 'book' ?
         '<div style="background:#f0faf4;border:2px solid #00A34A;border-radius:12px;padding:18px 20px;margin-bottom:18px;text-align:center">' +
           '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:800">Happy with your price?</p>' +
           '<p style="margin:0 0 14px;font-size:14px;color:#5b5648;line-height:1.5">Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked.</p>' +
           '<a href="' + bookingUrl(d) + '" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:999px;font-size:16px">Book online now</a>' +
           '<p style="margin:14px 0 0;font-size:12px;color:#5b5648;line-height:1.6;text-align:left">Because availability is limited, online bookings can be made up to <strong>3 days in advance</strong>, and your first invoice (the rest of the month\'s hire) must be paid within <strong>3 days of booking</strong> - otherwise we have to release your unit to the next customer. Want to move in further ahead? Just reply to this email or call <a href="tel:+447375355233" style="color:#008a3f">07375 355233</a> and we\'ll see what we can arrange.</p>' +
         '</div>' : '') +
+      (state === 'later' ?
+        '<div style="background:#e9eff4;border:2px solid #1E4C6B;border-radius:12px;padding:18px 20px;margin-bottom:18px">' +
+          '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:800">Planning ahead?</p>' +
+          '<p style="margin:0;font-size:14px;color:#22303a;line-height:1.6">Your preferred move-in date is more than 3 days away, and because availability is limited we only take firm bookings up to <strong>3 days before move-in</strong>. Don\'t worry - <strong>this quote is valid for 30 days</strong>. Reply to this email or call <a href="tel:+447375355233" style="color:#1E4C6B">07375 355233</a> nearer the time and we\'ll get you booked in.</p>' +
+        '</div>' : '') +
+      (state === 'full' ?
+        '<div style="background:#fdf3e7;border:2px solid #d98324;border-radius:12px;padding:18px 20px;margin-bottom:18px">' +
+          '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#a4560a;font-weight:800">Currently fully booked</p>' +
+          '<p style="margin:0;font-size:14px;color:#22303a;line-height:1.6">This size is in high demand and currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' - but units free up all the time. <strong>Reply to this email or call <a href="tel:+447375355233" style="color:#a4560a">07375 355233</a> to join the waiting list</strong> and we\'ll let you know the moment one becomes available. Your quote is valid for 30 days.</p>' +
+        '</div>' : '') +
       '<table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
-        '<td style="padding:0 10px 10px 0"><a href="tel:+447375355233" style="display:inline-block;background:' + (bookingUrl(d) ? '#1E4C6B' : '#00A34A') + ';color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a></td>' +
+        '<td style="padding:0 10px 10px 0"><a href="tel:+447375355233" style="display:inline-block;background:' + (state === 'book' ? '#1E4C6B' : '#00A34A') + ';color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a></td>' +
         '<td style="padding:0 0 10px 0"><a href="https://wa.me/447375355233?text=' + encodeURIComponent("Hi MB Storage, I've just received my quote and I'd like to go ahead.") + '" style="display:inline-block;background:#25D366;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">WhatsApp us</a></td>' +
       '</tr></table>' +
-      '<p style="margin:12px 0 0;font-size:14px;color:#5b5648;line-height:1.6">Spaces like this don\'t hang around long. ' + (bookingUrl(d) ? 'Book online above, reply to this email, WhatsApp us or give us a call' : 'Reply to this email, WhatsApp us or give us a call') + ' and we\'ll get you moved in - often the same day.</p>' +
+      '<p style="margin:12px 0 0;font-size:14px;color:#5b5648;line-height:1.6">' + (state === 'full' ? 'Reply to this email, WhatsApp us or give us a call and we\'ll add you to the waiting list.' : (state === 'book' ? 'Spaces like this don\'t hang around long. Book online above, reply to this email, WhatsApp us or give us a call and we\'ll get you moved in - often the same day.' : 'Reply to this email, WhatsApp us or give us a call and we\'ll get you moved in - often the same day.')) + '</p>' +
     '</td></tr>' +
     '<tr><td style="background:#22190A;padding:18px 28px;color:#cfc9bd;font-size:12px">' +
       'MB Storage &middot; <a href="tel:+447375355233" style="color:#cfc9bd">07375 355233</a> &middot; ' +
@@ -246,7 +303,7 @@ function customerHtml(name, u, incVat, d) {
   '</table></td></tr></table></div>';
 }
 
-function customerText(name, u, incVat, d) {
+function customerText(name, u, incVat, d, state) {
   var offers = prepayOffers(u);
   var offerLines = [];
   offers.forEach(function (o) {
@@ -265,25 +322,38 @@ function customerText(name, u, incVat, d) {
     'Monthly rental: ' + money(u.pcmExVat) + ' + VAT per calendar month',
     '(' + money(incVat) + ' including VAT)', '',
     'Refundable deposit: ' + money(u.deposit),
-    'Your deposit is refunded in full when you leave, provided the unit is left as it was found.', '',
+    'Your deposit is refunded in full when you leave, provided the unit is left as it was found.',
+    'This quote is valid for 30 days.', '',
     'FLEXIBLE - NO LONG-TERM CONTRACT', '----------------------------------------',
     'Hire is rolling and monthly with a one-month minimum. Stay as long or as little as you like, and if you ever need to leave it is just 14 days notice. You are never tied in.', '',
     'PAY UPFRONT AND SAVE', '----------------------------------------',
     'Lock in your rate and skip the monthly admin - the longer you pay upfront, the more you save.',
   ].concat(offerLines).concat([
+    'You still only pay the deposit to book - just choose your payment preference when booking (or mention it when we confirm) and we\'ll reflect it in your first invoice.',
+  ]).concat([
     '', 'INCLUDED WITH EVERY UNIT', '----------------------------------------',
     '- High-quality padlock provided',
     '- 24/7 CCTV with motion-sensing cameras',
     '- Mobile phone entry - open the gates from your phone',
     '- Round-the-clock support', '',
-    (bookingUrl(d) ? 'HAPPY WITH YOUR PRICE? BOOK ONLINE NOW' : null),
-    (bookingUrl(d) ? '----------------------------------------' : null),
-    (bookingUrl(d) ? 'Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked:' : null),
-    (bookingUrl(d) ? bookingUrl(d) : null),
-    (bookingUrl(d) ? '' : null),
-    (bookingUrl(d) ? 'Please note: because availability is limited, online bookings can be made up to 3 days in advance, and your first invoice (the rest of the month\'s hire) must be paid within 3 days of booking - otherwise we have to release your unit to the next customer. Want to move in further ahead? Reply to this email or call 07375 355233 and we\'ll see what we can arrange.' : null),
-    (bookingUrl(d) ? '' : null),
-    "Spaces like this don't hang around long. Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we'll get you moved in - often the same day.", '',
+    (state === 'book' ? 'HAPPY WITH YOUR PRICE? BOOK ONLINE NOW' : null),
+    (state === 'book' ? '----------------------------------------' : null),
+    (state === 'book' ? 'Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked:' : null),
+    (state === 'book' ? bookingUrl(d) : null),
+    (state === 'book' ? '' : null),
+    (state === 'book' ? 'Please note: because availability is limited, online bookings can be made up to 3 days in advance, and your first invoice (the rest of the month\'s hire) must be paid within 3 days of booking - otherwise we have to release your unit to the next customer. Want to move in further ahead? Reply to this email or call 07375 355233 and we\'ll see what we can arrange.' : null),
+    (state === 'book' ? '' : null),
+    (state === 'later' ? 'PLANNING AHEAD?' : null),
+    (state === 'later' ? '----------------------------------------' : null),
+    (state === 'later' ? 'Your preferred move-in date is more than 3 days away, and because availability is limited we only take firm bookings up to 3 days before move-in. Don\'t worry - this quote is valid for 30 days. Reply to this email or call 07375 355233 nearer the time and we\'ll get you booked in.' : null),
+    (state === 'later' ? '' : null),
+    (state === 'full' ? 'CURRENTLY FULLY BOOKED' : null),
+    (state === 'full' ? '----------------------------------------' : null),
+    (state === 'full' ? 'This size is in high demand and currently fully booked - but units free up all the time. Reply to this email or call 07375 355233 to join the waiting list and we\'ll let you know the moment one becomes available. Your quote is valid for 30 days.' : null),
+    (state === 'full' ? '' : null),
+    (state === 'full'
+      ? 'Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we\'ll add you to the waiting list.'
+      : "Spaces like this don't hang around long. Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we'll get you moved in - often the same day."), '',
     'Kind regards,', 'MB Storage',
     '07375 355233 | WhatsApp: wa.me/447375355233 | info@mbstorage.co.uk | mbstorage.co.uk'
   ]);
@@ -338,6 +408,9 @@ exports.handler = async function (event) {
   // Visible in Netlify function logs - confirms whether the booking flag reached us
   console.log('BOOKING_LIVE raw value:', JSON.stringify(process.env.BOOKING_LIVE), '-> booking button:', bookingLive() ? 'ON' : 'OFF');
 
+  var state = await bookingState(d);
+  console.log('Quote email booking panel state:', state);
+
   var send = makeSender();
 
   try {
@@ -345,8 +418,8 @@ exports.handler = async function (event) {
     await send({
       from: FROM, to: [d.email], reply_to: TO,
       subject: 'Your MB Storage quote - save up to 10% paying upfront',
-      html: customerHtml(name, u, incVat, d),
-      text: customerText(name, u, incVat, d)
+      html: customerHtml(name, u, incVat, d, state),
+      text: customerText(name, u, incVat, d, state)
     });
     // 2) Internal notification
     await send({

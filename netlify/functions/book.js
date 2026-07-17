@@ -104,11 +104,19 @@ exports.handler = async function (event) {
   form.append('line_items[0][price_data][unit_amount]', String(unit.pence));
   form.append('line_items[0][price_data][product_data][name]', 'Refundable deposit - ' + unit.label + ' (' + site.label + ')');
   form.append('line_items[0][price_data][product_data][description]', 'Refunded in full when you leave, provided the unit is left as found.');
+  // If they cancel at the card screen, send them back with the form still filled
+  var backParams = new URLSearchParams();
+  backParams.set('site', (d.site || '').toLowerCase());
+  backParams.set('size', d.container_size || '');
+  ['name', 'email', 'phone', 'move_in_date', 'payment_preference'].forEach(function (k) {
+    if (d[k]) backParams.set(k, String(d[k]).slice(0, 100));
+  });
+
   form.append('customer_email', String(d.email).trim());
   form.append('success_url', SITE + '/booking-confirmed.html');
-  form.append('cancel_url', SITE + '/book.html');
+  form.append('cancel_url', SITE + '/book.html?' + backParams.toString());
   form.append('payment_intent_data[description]', 'MB Storage deposit - ' + unit.label + ' at ' + site.label);
-  ['name', 'phone', 'move_in_date', 'storing'].forEach(function (k) {
+  ['name', 'phone', 'move_in_date', 'storing', 'payment_preference'].forEach(function (k) {
     if (d[k]) form.append('metadata[' + k + ']', String(d[k]).slice(0, 450));
   });
   form.append('metadata[site]', site.label);
