@@ -47,7 +47,7 @@
     <div class="container" style="max-width:820px">
       <div class="quote-note">
         <span class="icon">🔒</span>
-        <p><strong>How it works:</strong> choose your unit below and pay the refundable deposit by secure card payment (powered by Stripe). That reserves your unit - we'll then be straight in touch to confirm your move-in and sort your padlock and gate access. Your monthly rental is invoiced separately. Not ready to commit? <a href="quote.html">Get an instant quote by email</a> first.</p>
+        <p><strong>How it works:</strong> today you pay the <strong>refundable deposit only</strong>, by secure card payment (powered by Stripe). That reserves your unit. Before you move in, we'll invoice you for the rest of the current month (charged pro-rata up to the 1st) - once that's paid, you get your padlock and gate access and you're in. From then on, rent is invoiced monthly on the 1st. Not ready to commit? <a href="quote.html">Get an instant quote by email</a> first.</p>
       </div>
 
       <form id="book-form" class="form-card" action="/.netlify/functions/book" method="POST">
@@ -103,7 +103,7 @@
           <div class="full">
             <button type="submit" class="btn btn-primary" style="width:100%">Book now - pay my refundable deposit</button>
             <div id="book-status" class="status-msg" role="status"></div>
-            <p class="hint center mt-1">Deposits: £150 (20ft) / £75 (8ft), refunded in full when you leave provided the unit is left as found. Secure card payment by Stripe - your card details never touch our site.</p>
+            <p class="hint center mt-1">Today you pay the deposit only: £150 (20ft) / £75 (8ft), refunded in full when you leave provided the unit is left as found. Your first rent invoice (the rest of this month, pro-rata) follows by email and is payable before move-in. Secure card payment by Stripe - your card details never touch our site.</p>
           </div>
         </div>
       </form>
@@ -115,7 +115,11 @@
       <h2>Booking questions, answered</h2>
       <details>
         <summary>What am I paying today?</summary>
-        <p>Just the refundable deposit - £150 for a 20ft container or £75 for an 8ft. It secures your unit and is refunded in full when you leave, provided the unit is left as it was found. Your monthly rental is invoiced separately by email.</p>
+        <p>Just the refundable deposit - £150 for a 20ft container or £75 for an 8ft. It secures your unit and is refunded in full when you leave, provided the unit is left as it was found.</p>
+      </details>
+      <details>
+        <summary>When do I pay rent, and when can I move in?</summary>
+        <p>After your deposit, we'll email you an invoice for the rest of the current month - charged pro-rata up to the 1st. For example, book on the 17th of July and your first invoice covers the 17th to the 31st. Once that invoice is paid, you can move in - often the same day. From then on, rent is invoiced monthly on the 1st.</p>
       </details>
       <details>
         <summary>Is the payment secure?</summary>
