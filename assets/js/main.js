@@ -72,8 +72,22 @@ function initBookingForm() {
       availHint.innerHTML = '<strong style="color:#008a3f">Available now</strong> at this site.';
     }
   }
-  if (siteSel) siteSel.addEventListener('change', updateAvail);
-  if (sizeSel) sizeSel.addEventListener('change', updateAvail);
+  /* 8ft containers only exist at Batley - physically prevent the
+     Liversedge + 8ft combination rather than erroring at checkout. */
+  function enforceSiteSizes() {
+    if (!siteSel || !sizeSel) return;
+    var opt8 = sizeSel.querySelector('option[value="8ft"]');
+    if (!opt8) return;
+    var isLiversedge = siteSel.value === 'liversedge';
+    opt8.disabled = isLiversedge;
+    if (isLiversedge && sizeSel.value === '8ft') {
+      sizeSel.value = '';
+      if (availHint) availHint.innerHTML = '<strong style="color:#b3261e">8ft containers are available at our Batley site only</strong> - please choose the 20ft, or switch site to Batley.';
+    }
+  }
+  if (siteSel) siteSel.addEventListener('change', function () { enforceSiteSizes(); updateAvail(); });
+  if (sizeSel) sizeSel.addEventListener('change', function () { enforceSiteSizes(); updateAvail(); });
+  enforceSiteSizes();
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();

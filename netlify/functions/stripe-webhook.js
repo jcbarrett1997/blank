@@ -118,13 +118,15 @@ function customerHtml(name, m, amount) {
           '<tr><td colspan="2" style="border-top:1px solid #e4e1da;padding-top:10px"></td></tr>' +
           row('Deposit paid', amount) +
         '</table>' +
-        '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found. Your monthly rental will be invoiced separately.</p>' +
+        '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found.</p>' +
       '</div>' +
+      '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">One step left before move-in</p>' +
+      '<p style="margin:0 0 16px;font-size:14px;color:#22303a;line-height:1.6">We\'ll email your first invoice, covering the rest of the current month (charged pro-rata up to the 1st). <strong>Once that\'s paid, you can move in</strong> - often the same day. From then on, rent is invoiced monthly on the 1st.</p>' +
       '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">What happens next</p>' +
       '<ul style="margin:0 0 20px;padding-left:18px;color:#5b5648;font-size:14px;line-height:1.7">' +
         '<li>We\'ll call or email to confirm your move-in date and unit</li>' +
-        '<li>Your first invoice follows by email</li>' +
-        '<li>You\'ll get your high-quality padlock and mobile phone gate access</li>' +
+        '<li>Your first invoice follows by email - the rest of this month, pro-rata</li>' +
+        '<li>Pay it and you\'ll get your high-quality padlock and mobile phone gate access</li>' +
         '<li>Move in - often the same day</li>' +
       '</ul>' +
       '<a href="tel:+447375355233" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Questions? Call 07375 355233</a>' +
@@ -146,11 +148,13 @@ function customerText(name, m, amount) {
     'Site: ' + (m.site || '-'),
     (m.move_in_date ? 'Preferred move-in date: ' + m.move_in_date : null),
     'Deposit paid: ' + amount, '',
-    'Your deposit is refunded in full when you leave, provided the unit is left as it was found. Your monthly rental will be invoiced separately.', '',
+    'Your deposit is refunded in full when you leave, provided the unit is left as it was found.', '',
+    'ONE STEP LEFT BEFORE MOVE-IN', '----------------------------------------',
+    'We\'ll email your first invoice, covering the rest of the current month (charged pro-rata up to the 1st). Once that\'s paid, you can move in - often the same day. From then on, rent is invoiced monthly on the 1st.', '',
     'WHAT HAPPENS NEXT', '----------------------------------------',
     '- We\'ll call or email to confirm your move-in date and unit',
-    '- Your first invoice follows by email',
-    '- You\'ll get your padlock and mobile phone gate access',
+    '- Your first invoice follows by email - the rest of this month, pro-rata',
+    '- Pay it and you\'ll get your padlock and mobile phone gate access',
     '- Move in - often the same day', '',
     'Questions? Call 07375 355233.', '',
     'Kind regards,', 'MB Storage',
