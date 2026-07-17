@@ -209,7 +209,21 @@ async function recordSalesReceipt(company, opts) {
   // The amounts the customer paid are gross (VAT already included), so
   // tell QuickBooks to work backwards from them rather than adding VAT on top
   if (depositTaxCodeId || rentTaxCodeId) payload.GlobalTaxCalculation = 'TaxInclusive';
-  return qbRequest(company, 'POST', 'salesreceipt', payload);
+  if (opts.email) payload.BillEmail = { Address: String(opts.email).trim() };
+
+  var created = await qbRequest(company, 'POST', 'salesreceipt', payload);
+
+  // Optionally have QuickBooks email the customer its official receipt
+  // (VAT breakdown + company details) - the proper document for
+  // VAT-registered customers. Off unless QUICKBOOKS_EMAIL_RECEIPTS=true.
+  if (process.env.QUICKBOOKS_EMAIL_RECEIPTS === 'true' && opts.email && created.SalesReceipt && created.SalesReceipt.Id) {
+    try {
+      await qbRequest(company, 'POST', 'salesreceipt/' + created.SalesReceipt.Id + '/send');
+    } catch (err) {
+      console.error('QuickBooks receipt email failed (receipt itself was created fine):', err.message);
+    }
+  }
+  return created;
 }
 
 module.exports = {

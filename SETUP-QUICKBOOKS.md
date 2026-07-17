@@ -152,6 +152,25 @@ booking and check:
   confirmation emails are never affected by a QuickBooks failure - this
   step is isolated on purpose.
 
+## 6b. Optional: email customers the official VAT receipt automatically
+
+The site's own confirmation email shows the VAT amount included in the
+rent. For the official document (VAT breakdown plus your company details,
+as configured in QuickBooks), QuickBooks can email its sales receipt to
+the customer automatically the moment it's created. To turn that on, set:
+
+- `QUICKBOOKS_EMAIL_RECEIPTS` = `true`
+
+and redeploy. Customers then get two emails per booking: the site's
+branded confirmation and QuickBooks' official receipt. Leave the variable
+unset (or not `true`) to keep receipts manual - you can always send one
+from inside QuickBooks (open the sales receipt → Save and send) when a
+customer asks.
+
+Check each company's receipt template shows what a VAT receipt needs
+(company name, address and VAT number): QuickBooks → Settings (gear) →
+Custom form styles / Account and settings → Sales.
+
 ## 7. Go live
 
 1. Get your **Production** Client ID/Secret from the Intuit app (Keys &

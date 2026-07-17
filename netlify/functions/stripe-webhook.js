@@ -92,6 +92,17 @@ function verifySig(payload, sigHeader, secret) {
 
 function money(pence) { return '£' + (pence / 100).toFixed(2); }
 
+/* "Includes VAT of £X.XX (20%) on your rent payment..." - computed from
+   the gross rent figure the customer paid. Deposits carry no VAT. */
+var VAT_RATE = 0.20;
+function vatLine(m) {
+  var gross = parseFloat(m.rent_amount_gbp || '0') || 0;
+  if (!gross) return '';
+  var net = gross / (1 + VAT_RATE);
+  var vat = gross - net;
+  return 'Your rent payment includes VAT of £' + vat.toFixed(2) + ' (20% on a net amount of £' + net.toFixed(2) + '). Your deposit is outside the scope of VAT.';
+}
+
 function customerHtml(name, m, amount) {
   var row = function (label, val) {
     return '<tr><td style="padding:6px 0;color:#5b5648;font-size:14px">' + esc(label) +
@@ -123,6 +134,7 @@ function customerHtml(name, m, amount) {
           row('Total paid', amount) +
         '</table>' +
         '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found. Your rent is paid up for ' + esc(m.rent_period || 'the period shown') + ' - after that, rent is invoiced monthly on the 1st.</p>' +
+        (vatLine(m) ? '<p style="margin:8px 0 0;font-size:13px;color:#5b5648;line-height:1.5">' + vatLine(m) + ' Need a full VAT receipt? Just reply to this email.</p>' : '') +
       '</div>' +
       '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">What happens next</p>' +
       '<ul style="margin:0 0 20px;padding-left:18px;color:#5b5648;font-size:14px;line-height:1.7">' +
@@ -153,7 +165,8 @@ function customerText(name, m, amount) {
     (m.deposit_paid ? 'Refundable deposit: ' + m.deposit_paid : null),
     (m.rent_paid ? 'First rent payment (' + (m.rent_period || 'to month end') + '): ' + m.rent_paid : null),
     'Total paid: ' + amount, '',
-    'Your deposit is refunded in full when you leave, provided the unit is left as it was found. Your rent is paid up for ' + (m.rent_period || 'the period shown') + ' - after that, rent is invoiced monthly on the 1st.', '',
+    'Your deposit is refunded in full when you leave, provided the unit is left as it was found. Your rent is paid up for ' + (m.rent_period || 'the period shown') + ' - after that, rent is invoiced monthly on the 1st.',
+    (vatLine(m) ? vatLine(m) + ' Need a full VAT receipt? Just reply to this email.' : null), '',
     'WHAT HAPPENS NEXT', '----------------------------------------',
     '- We\'ll call or email to confirm your move-in date and unit',
     '- You\'ll get your padlock and mobile phone gate access',
