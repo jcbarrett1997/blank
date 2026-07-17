@@ -46,6 +46,21 @@ Site configuration → Environment variables → add:
 
 Trigger a deploy so these are picked up.
 
+### If you see "The environment has not been configured to use Netlify Blobs..."
+
+Some Netlify accounts don't automatically wire up Blobs (the private
+storage used to hold the QuickBooks connection) inside Functions. If the
+connect step below fails with that message, add two more variables:
+
+- `BLOBS_SITE_ID` - Netlify → Site configuration → General → Site details
+  → **Site ID** (looks like a long code, not the site name)
+- `BLOBS_TOKEN` - Netlify → click your account/avatar → **User settings**
+  → **Applications** → **Personal access tokens** → **New access token**
+  (give it a name like "MB Storage Blobs", copy the token - mark it secret
+  in Netlify)
+
+Trigger another deploy, then retry the connect step.
+
 ## 3. Create two items in each QuickBooks company
 
 In **both** the Batley and the Liversedge QuickBooks Online company,
