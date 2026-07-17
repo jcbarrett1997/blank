@@ -230,6 +230,7 @@ function customerHtml(name, u, incVat, d) {
           '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:800">Happy with your price?</p>' +
           '<p style="margin:0 0 14px;font-size:14px;color:#5b5648;line-height:1.5">Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked.</p>' +
           '<a href="' + bookingUrl(d) + '" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:999px;font-size:16px">Book online now</a>' +
+          '<p style="margin:14px 0 0;font-size:12px;color:#5b5648;line-height:1.6;text-align:left">Because availability is limited, online bookings can be made up to <strong>3 days in advance</strong>, and your first invoice (the rest of the month\'s hire) must be paid within <strong>3 days of booking</strong> - otherwise we have to release your unit to the next customer. Want to move in further ahead? Just reply to this email or call <a href="tel:+447375355233" style="color:#008a3f">07375 355233</a> and we\'ll see what we can arrange.</p>' +
         '</div>' : '') +
       '<table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
         '<td style="padding:0 10px 10px 0"><a href="tel:+447375355233" style="display:inline-block;background:' + (bookingUrl(d) ? '#1E4C6B' : '#00A34A') + ';color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a></td>' +
@@ -279,6 +280,8 @@ function customerText(name, u, incVat, d) {
     (bookingUrl(d) ? '----------------------------------------' : null),
     (bookingUrl(d) ? 'Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked:' : null),
     (bookingUrl(d) ? bookingUrl(d) : null),
+    (bookingUrl(d) ? '' : null),
+    (bookingUrl(d) ? 'Please note: because availability is limited, online bookings can be made up to 3 days in advance, and your first invoice (the rest of the month\'s hire) must be paid within 3 days of booking - otherwise we have to release your unit to the next customer. Want to move in further ahead? Reply to this email or call 07375 355233 and we\'ll see what we can arrange.' : null),
     (bookingUrl(d) ? '' : null),
     "Spaces like this don't hang around long. Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we'll get you moved in - often the same day.", '',
     'Kind regards,', 'MB Storage',

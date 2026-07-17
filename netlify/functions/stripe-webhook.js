@@ -122,6 +122,7 @@ function customerHtml(name, m, amount) {
       '</div>' +
       '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">One step left before move-in</p>' +
       '<p style="margin:0 0 16px;font-size:14px;color:#22303a;line-height:1.6">We\'ll email your first invoice, covering the rest of the current month (charged pro-rata up to the 1st). <strong>Once that\'s paid, you can move in</strong> - often the same day. From then on, rent is invoiced monthly on the 1st.</p>' +
+      '<p style="margin:0 0 16px;font-size:13px;color:#b3261e;line-height:1.6;background:#fdeaea;border-radius:8px;padding:10px 14px"><strong>Please pay your first invoice within 3 days of booking.</strong> Demand for units is high, so if it isn\'t paid within 3 days we have to release your unit to the next customer.</p>' +
       '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">What happens next</p>' +
       '<ul style="margin:0 0 20px;padding-left:18px;color:#5b5648;font-size:14px;line-height:1.7">' +
         '<li>We\'ll call or email to confirm your move-in date and unit</li>' +
@@ -151,6 +152,7 @@ function customerText(name, m, amount) {
     'Your deposit is refunded in full when you leave, provided the unit is left as it was found.', '',
     'ONE STEP LEFT BEFORE MOVE-IN', '----------------------------------------',
     'We\'ll email your first invoice, covering the rest of the current month (charged pro-rata up to the 1st). Once that\'s paid, you can move in - often the same day. From then on, rent is invoiced monthly on the 1st.', '',
+    'PLEASE PAY YOUR FIRST INVOICE WITHIN 3 DAYS OF BOOKING. Demand for units is high, so if it isn\'t paid within 3 days we have to release your unit to the next customer.', '',
     'WHAT HAPPENS NEXT', '----------------------------------------',
     '- We\'ll call or email to confirm your move-in date and unit',
     '- Your first invoice follows by email - the rest of this month, pro-rata',
