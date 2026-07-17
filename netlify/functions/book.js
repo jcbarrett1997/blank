@@ -296,6 +296,8 @@ exports.handler = async function (event) {
   form.append('metadata[site]', site.label);
   form.append('metadata[container_size]', d.container_size);
   form.append('metadata[terms_agreed]', 'yes - ' + new Date().toISOString());
+  form.append('metadata[deposit_amount_gbp]', (unit.depositPence / 100).toFixed(2));
+  form.append('metadata[rent_amount_gbp]', (rent.pence / 100).toFixed(2));
   form.append('metadata[deposit_paid]', money(unit.depositPence));
   form.append('metadata[rent_paid]', money(rent.pence));
   form.append('metadata[rent_period]', rent.period);

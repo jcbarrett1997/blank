@@ -19,6 +19,7 @@
  */
 
 var crypto = require('crypto');
+var qb = require('./lib/quickbooks');
 
 var FROM = process.env.MAIL_FROM || 'MB Storage <quotes@mbstorage.co.uk>';
 var TO   = process.env.MAIL_TO   || 'info@mbstorage.co.uk';
@@ -186,6 +187,27 @@ function notifyHtml(m, email, amount) {
     '</table></div>';
 }
 
+/* Records the payment as a Sales Receipt in the matching QuickBooks Online
+   company. Dormant until QuickBooks is connected and its item IDs are set
+   (see SETUP-QUICKBOOKS.md) - throws early and cleanly if not, which the
+   caller logs and otherwise ignores. */
+async function syncToQuickBooks(m, email, s) {
+  if (!qb.configured()) return; // QuickBooks not set up yet - nothing to do
+  var company = String(m.site || '').toLowerCase();
+  if (company !== 'batley' && company !== 'liversedge') return;
+
+  await qb.recordSalesReceipt(company, {
+    name: m.name,
+    email: email,
+    phone: m.phone,
+    depositAmount: parseFloat(m.deposit_amount_gbp || '0') || 0,
+    rentAmount: parseFloat(m.rent_amount_gbp || '0') || 0,
+    rentLabel: 'First rent payment (' + (m.rent_period || 'first period') + ')',
+    txnDate: new Date().toISOString().slice(0, 10),
+    reference: s.id || s.payment_intent || 'Stripe'
+  });
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method not allowed' };
 
@@ -231,6 +253,10 @@ exports.handler = async function (event) {
     // and a non-2xx would make Stripe retry and double-send anything that DID work.
     console.error('Booking email failed:', err);
   }
+
+  // Record the sale in QuickBooks (best-effort, isolated - the booking and
+  // its emails are already done above regardless of what happens here)
+  try { await syncToQuickBooks(m, email, s); } catch (err) { console.error('QuickBooks sync failed:', err); }
 
   return { statusCode: 200, body: 'OK' };
 };
