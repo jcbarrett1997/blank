@@ -165,7 +165,7 @@ async function recordSalesReceipt(company, opts) {
     lines.push({
       Amount: opts.depositAmount,
       DetailType: 'SalesItemLineDetail',
-      Description: 'Refundable deposit',
+      Description: opts.depositLabel || 'Refundable deposit',
       SalesItemLineDetail: { ItemRef: { value: depositItemId }, Qty: 1, UnitPrice: opts.depositAmount }
     });
   }
