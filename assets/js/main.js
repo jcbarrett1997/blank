@@ -255,6 +255,33 @@ function initQuoteForm() {
   var status = document.getElementById('quote-status');
   var btn = form.querySelector('button[type="submit"]');
 
+  /* 8ft containers only exist at Batley - mirror the booking form and
+     physically prevent the Liversedge + 8ft combination here too. */
+  var sizeSel = document.getElementById('q-size');
+  var siteSel = document.getElementById('q-site');
+  var sizeNote = null;
+  function enforceQuoteSizes() {
+    if (!sizeSel || !siteSel) return;
+    var opt8 = sizeSel.querySelector('option[value="8ft"]');
+    if (!opt8) return;
+    var isLiversedge = siteSel.value === 'Liversedge';
+    opt8.disabled = isLiversedge;
+    if (!sizeNote) {
+      sizeNote = document.createElement('p');
+      sizeNote.className = 'hint';
+      sizeSel.parentNode.appendChild(sizeNote);
+    }
+    if (isLiversedge && sizeSel.value === '8ft') {
+      sizeSel.value = '';
+      sizeNote.innerHTML = '<strong style="color:#b3261e">8ft containers are available at our Batley site only</strong> - please choose the 20ft, or switch site to Batley.';
+    } else if (!isLiversedge) {
+      sizeNote.textContent = '';
+    }
+  }
+  if (siteSel) siteSel.addEventListener('change', enforceQuoteSizes);
+  if (sizeSel) sizeSel.addEventListener('change', enforceQuoteSizes);
+  enforceQuoteSizes();
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
