@@ -2,9 +2,13 @@
  * MB Storage - online booking (Netlify Function)
  *
  * Takes a booking request, re-checks availability server-side, then creates
- * a Stripe Checkout session for the refundable deposit and returns its URL
- * for the browser to redirect to. Payment confirmation (emails etc.) is
- * handled by stripe-webhook.js when Stripe tells us the payment succeeded.
+ * a Stripe Checkout session for the refundable deposit PLUS the first rent
+ * payment (pro-rata to the end of the move-in month; when moving in within
+ * 7 days of month-end, the following month is included too, so the customer
+ * isn't invoiced again days after paying). Paying in full at booking means
+ * a unit is only ever held by money, never by a promise - no chase-up
+ * window, no double-booking race on the last unit. Payment confirmation
+ * (emails etc.) is handled by stripe-webhook.js.
  *
  * Batley and Liversedge are separate companies with separate bank accounts,
  * so each has its own Stripe account - the key is chosen by site:
@@ -19,16 +23,165 @@
 
 var SITE = (process.env.SITE_URL || 'https://www.mbstorage.co.uk').replace(/\/$/, '');
 
-/* Deposits (in pence). Server-side only - never trusted from the browser. */
-var DEPOSITS = {
-  '20ft': { label: '20ft × 8ft storage container', pence: 15000 },
-  '8ft':  { label: '8ft × 6ft 6in storage container', pence: 7500 }
+/* Prices (server-side only - never trusted from, or exposed to, the browser). */
+var VAT_RATE = 0.20;
+var UNITS = {
+  '20ft': { label: '20ft × 8ft storage container', pcmExVat: 160.00, depositPence: 15000 },
+  '8ft':  { label: '8ft × 6ft 6in storage container', pcmExVat: 82.50, depositPence: 7500 }
 };
 
 var SITES = {
   batley:     { label: 'Batley',     keyEnv: 'STRIPE_SECRET_KEY_BATLEY' },
   liversedge: { label: 'Liversedge', keyEnv: 'STRIPE_SECRET_KEY_LIVERSEDGE' }
 };
+
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+/* First rent payment for a move-in date: pro-rata (daily rate) from the
+   move-in day to the end of that month, inc VAT. Moving in within 7 days
+   of month-end also includes the following month, so the customer isn't
+   invoiced again days after paying. */
+function rentBreakdown(u, moveInISO) {
+  var mv = new Date(moveInISO + 'T12:00:00');
+  if (isNaN(mv.getTime())) return null;
+  var y = mv.getFullYear(), m = mv.getMonth(), day = mv.getDate();
+  var daysInMonth = new Date(y, m + 1, 0).getDate();
+  var remaining = daysInMonth - day + 1;
+  var exVat = u.pcmExVat * remaining / daysInMonth;
+  var period = (day === 1) ? MONTHS[m] : (day + '-' + daysInMonth + ' ' + MONTHS[m]);
+  if (remaining <= 7) {
+    exVat += u.pcmExVat;
+    var nextM = (m + 1) % 12;
+    period += ' + ' + MONTHS[nextM];
+  }
+  return {
+    pence: Math.round(exVat * (1 + VAT_RATE) * 100),
+    period: period
+  };
+}
+
+function money(pence) { return '£' + (pence / 100).toFixed(2); }
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* Same provider-agnostic sender as quote.js (Mailgun or Resend). */
+function makeSender() {
+  if (process.env.RESEND_API_KEY) {
+    return async function (msg) {
+      var r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg)
+      });
+      if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()));
+      return r.json();
+    };
+  }
+  return async function (msg) {
+    var base = process.env.MAILGUN_API_BASE || 'https://api.mailgun.net';
+    var form = new URLSearchParams();
+    form.append('from', msg.from);
+    form.append('to', Array.isArray(msg.to) ? msg.to.join(',') : msg.to);
+    if (msg.reply_to) form.append('h:Reply-To', msg.reply_to);
+    form.append('subject', msg.subject);
+    if (msg.html) form.append('html', msg.html);
+    if (msg.text) form.append('text', msg.text);
+    var r = await fetch(base + '/v3/' + process.env.MAILGUN_DOMAIN + '/messages', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from('api:' + process.env.MAILGUN_API_KEY).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: form.toString()
+    });
+    if (!r.ok) throw new Error('Mailgun ' + r.status + ': ' + (await r.text()));
+    return r.json();
+  };
+}
+
+var FROM = process.env.MAIL_FROM || 'MB Storage <quotes@mbstorage.co.uk>';
+var TO   = process.env.MAIL_TO   || 'info@mbstorage.co.uk';
+
+/* Upfront (6/12 month) bookings skip card payment entirely - card fees on
+   those sums would be excessive. Instead the request is emailed to MB
+   Storage to raise a discounted invoice, and the customer is told it's on
+   its way. */
+async function handleUpfrontRequest(d, site, unit, rent) {
+  var pct = d.payment_preference.indexOf('12') === 0 ? '10%' : '5%';
+  var send = makeSender();
+
+  var rowH = function (k, v) {
+    return '<tr><td style="padding:5px 12px 5px 0;color:#5b5648;font-size:14px">' + esc(k) +
+           '</td><td style="padding:5px 0;color:#22303a;font-size:14px;font-weight:600">' + esc(v || ' - ') + '</td></tr>';
+  };
+
+  // 1) Customer acknowledgement
+  await send({
+    from: FROM, to: [String(d.email).trim()], reply_to: TO,
+    subject: 'Your MB Storage booking request - discounted invoice on its way',
+    html:
+      '<div style="background:#f2f5f8;padding:24px 0;font-family:Segoe UI,Arial,sans-serif">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
+      '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4e1da">' +
+        '<tr><td style="background:#ffffff;padding:22px 28px" align="left"><img src="' + SITE + '/assets/img/logo-landscape@4x.png" alt="MB Storage" height="44" style="height:44px;display:block"></td></tr>' +
+        '<tr><td style="height:5px;background:#00A34A"></td></tr>' +
+        '<tr><td style="padding:28px">' +
+          '<p style="margin:0 0 12px;font-size:16px;color:#22303a">Hi ' + esc((d.name || 'there').trim()) + ',</p>' +
+          '<p style="margin:0 0 16px;font-size:15px;color:#5b5648;line-height:1.6"><strong style="color:#008a3f">Great choice - your booking request is in.</strong> Because you\'re paying ' + esc(d.payment_preference) + ' (saving ' + pct + '), there\'s nothing to pay by card today. We\'ll be in touch <strong>as soon as possible</strong> (usually the same day) with your invoice at the discounted rate.</p>' +
+          '<div style="background:#f7f6f3;border:1px solid #e4e1da;border-radius:12px;padding:18px 20px;margin-bottom:16px">' +
+            '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:700">Your request</p>' +
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' +
+              rowH('Unit', unit.label) + rowH('Site', site.label) +
+              rowH('Move-in date', d.move_in_date) +
+              rowH('Paying', d.payment_preference + ' (save ' + pct + ')') +
+            '</table>' +
+          '</div>' +
+          '<p style="margin:0 0 16px;font-size:13px;color:#5b5648;line-height:1.6"><strong>Please note:</strong> a booking request doesn\'t reserve your unit - units go to whoever pays first, so your unit is only secured once your invoice is paid. That\'s why we\'ll be in touch as soon as possible to get everything sorted with you. Questions in the meantime? Just reply to this email or call us.</p>' +
+          '<a href="tel:+447375355233" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call us: 07375 355233</a>' +
+        '</td></tr>' +
+        '<tr><td style="background:#22190A;padding:18px 28px;color:#cfc9bd;font-size:12px">MB Storage &middot; <a href="tel:+447375355233" style="color:#cfc9bd">07375 355233</a> &middot; <a href="mailto:info@mbstorage.co.uk" style="color:#cfc9bd">info@mbstorage.co.uk</a> &middot; <a href="' + SITE + '" style="color:#cfc9bd">mbstorage.co.uk</a></td></tr>' +
+      '</table></td></tr></table></div>',
+    text: [
+      'Hi ' + (d.name || 'there').trim() + ',', '',
+      'Great choice - your booking request is in. Because you\'re paying ' + d.payment_preference + ' (saving ' + pct + '), there\'s nothing to pay by card today.',
+      'We\'ll be in touch as soon as possible (usually the same day) with your invoice at the discounted rate.', '',
+      'YOUR REQUEST', '----------------------------------------',
+      'Unit: ' + unit.label,
+      'Site: ' + site.label,
+      'Move-in date: ' + d.move_in_date,
+      'Paying: ' + d.payment_preference + ' (save ' + pct + ')', '',
+      'PLEASE NOTE: a booking request doesn\'t reserve your unit - units go to whoever pays first, so your unit is only secured once your invoice is paid. That\'s why we\'ll be in touch as soon as possible to get everything sorted with you.', '',
+      'Questions? Reply to this email or call 07375 355233.', '',
+      'Kind regards,', 'MB Storage',
+      '07375 355233 | info@mbstorage.co.uk | mbstorage.co.uk'
+    ].join('\n')
+  });
+
+  // 2) Internal notification - urgent, an invoice needs raising
+  await send({
+    from: FROM, to: [TO], reply_to: String(d.email).trim(),
+    subject: 'UPFRONT BOOKING REQUEST - send discounted invoice - ' + (d.name || '?') + ' (' + site.label + ')',
+    html:
+      '<div style="font-family:Segoe UI,Arial,sans-serif;color:#22303a">' +
+      '<h2 style="color:#008a3f">UPFRONT BOOKING REQUEST - ' + esc(d.payment_preference) + '</h2>' +
+      '<p style="color:#b3261e;font-weight:700">Action needed ASAP: send the discounted invoice (' + pct + ' off) - the customer has been told it\'s on its way. No card payment was taken.</p>' +
+      '<table role="presentation" cellpadding="0" cellspacing="0">' +
+        rowH('Name', d.name) + rowH('Email', d.email) + rowH('Phone', d.phone) +
+        rowH('Unit', unit.label) + rowH('Site', site.label) +
+        rowH('Move-in date', d.move_in_date) +
+        rowH('Storing', d.storing) +
+        rowH('Paying', d.payment_preference + ' (' + pct + ' discount)') +
+        rowH('Reference - deposit', money(unit.depositPence)) +
+        rowH('Reference - standard first rent (' + rent.period + ')', money(rent.pence)) +
+        rowH('Agreed to T&Cs', 'yes - ' + new Date().toISOString()) +
+      '</table></div>'
+  });
+}
 
 function json(status, obj) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
@@ -62,7 +215,7 @@ exports.handler = async function (event) {
   if (d._honey || d.company) return json(200, { ok: true });
 
   var site = SITES[(d.site || '').toLowerCase()];
-  var unit = DEPOSITS[d.container_size];
+  var unit = UNITS[d.container_size];
   if (!site) return json(400, { ok: false, error: 'Please choose a site.' });
   if (!unit) return json(400, { ok: false, error: 'Please choose a container size.' });
   if (d.container_size === '8ft' && (d.site || '').toLowerCase() !== 'batley') {
@@ -75,20 +228,21 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: 'Please confirm you agree to our Terms & Conditions.' });
   }
 
+  // Move-in date is required - the first rent payment is calculated from it
+  if (!d.move_in_date) return json(400, { ok: false, error: 'Please choose your move-in date.' });
+
   // Bookings are only taken up to 3 days ahead - we can't guarantee
   // availability further out (browser enforces this too; this is the backstop)
-  if (d.move_in_date) {
-    var picked = new Date(d.move_in_date + 'T12:00:00');
-    var latest = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-    latest.setHours(23, 59, 59, 999);
-    var earliest = new Date(); earliest.setHours(0, 0, 0, 0);
-    if (isNaN(picked.getTime()) || picked > latest || picked < earliest) {
-      return json(400, { ok: false, error: 'Bookings can be made up to 3 days in advance. For later move-in dates, please get a quote and we\'ll pencil you in.' });
-    }
+  var picked = new Date(d.move_in_date + 'T12:00:00');
+  var latest = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+  latest.setHours(23, 59, 59, 999);
+  var earliest = new Date(); earliest.setHours(0, 0, 0, 0);
+  if (isNaN(picked.getTime()) || picked > latest || picked < earliest) {
+    return json(400, { ok: false, error: 'Bookings can be made up to 3 days in advance. For later move-in dates, please get in touch and we\'ll see what we can arrange.' });
   }
 
-  var key = process.env[site.keyEnv];
-  if (!key) return json(503, { ok: false, error: 'Online booking is not available just yet. Please use the quote form or call 07375 355233.' });
+  var rent = rentBreakdown(unit, d.move_in_date);
+  if (!rent) return json(400, { ok: false, error: 'Please choose a valid move-in date.' });
 
   // Availability re-check (authoritative, server-side)
   var free = await unitsFree((d.site || '').toLowerCase(), d.container_size);
@@ -96,14 +250,34 @@ exports.handler = async function (event) {
     return json(409, { ok: false, error: 'Sorry - that size has just sold out at ' + site.label + '. Call us on 07375 355233 and we\'ll help.' });
   }
 
+  // Upfront payers don't pay by card (fees would be excessive on those
+  // sums) - their request is emailed in and a discounted invoice follows
+  if (d.payment_preference === '6 months upfront' || d.payment_preference === '12 months upfront') {
+    try {
+      await handleUpfrontRequest(d, site, unit, rent);
+      return json(200, { ok: true, url: '/booking-requested.html' });
+    } catch (err) {
+      console.error(err);
+      return json(502, { ok: false, error: 'Could not send your request. Please try again or call 07375 355233.' });
+    }
+  }
+
+  var key = process.env[site.keyEnv];
+  if (!key) return json(503, { ok: false, error: 'Online booking is not available just yet. Please use the quote form or call 07375 355233.' });
+
   // Create the Stripe Checkout session (form-encoded REST call - no SDK needed)
   var form = new URLSearchParams();
   form.append('mode', 'payment');
   form.append('line_items[0][quantity]', '1');
   form.append('line_items[0][price_data][currency]', 'gbp');
-  form.append('line_items[0][price_data][unit_amount]', String(unit.pence));
+  form.append('line_items[0][price_data][unit_amount]', String(unit.depositPence));
   form.append('line_items[0][price_data][product_data][name]', 'Refundable deposit - ' + unit.label + ' (' + site.label + ')');
   form.append('line_items[0][price_data][product_data][description]', 'Refunded in full when you leave, provided the unit is left as found.');
+  form.append('line_items[1][quantity]', '1');
+  form.append('line_items[1][price_data][currency]', 'gbp');
+  form.append('line_items[1][price_data][unit_amount]', String(rent.pence));
+  form.append('line_items[1][price_data][product_data][name]', 'First rent payment - ' + rent.period);
+  form.append('line_items[1][price_data][product_data][description]', 'Your hire to the end of the period, including VAT. Rent is then invoiced monthly on the 1st.');
   // If they cancel at the card screen, send them back with the form still filled
   var backParams = new URLSearchParams();
   backParams.set('site', (d.site || '').toLowerCase());
@@ -115,13 +289,16 @@ exports.handler = async function (event) {
   form.append('customer_email', String(d.email).trim());
   form.append('success_url', SITE + '/booking-confirmed.html');
   form.append('cancel_url', SITE + '/book.html?' + backParams.toString());
-  form.append('payment_intent_data[description]', 'MB Storage deposit - ' + unit.label + ' at ' + site.label);
+  form.append('payment_intent_data[description]', 'MB Storage booking - deposit + rent (' + rent.period + ') - ' + unit.label + ' at ' + site.label);
   ['name', 'phone', 'move_in_date', 'storing', 'payment_preference'].forEach(function (k) {
     if (d[k]) form.append('metadata[' + k + ']', String(d[k]).slice(0, 450));
   });
   form.append('metadata[site]', site.label);
   form.append('metadata[container_size]', d.container_size);
   form.append('metadata[terms_agreed]', 'yes - ' + new Date().toISOString());
+  form.append('metadata[deposit_paid]', money(unit.depositPence));
+  form.append('metadata[rent_paid]', money(rent.pence));
+  form.append('metadata[rent_period]', rent.period);
 
   try {
     var r = await fetch('https://api.stripe.com/v1/checkout/sessions', {

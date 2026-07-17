@@ -4,7 +4,7 @@
  * Stripe calls this endpoint when a Checkout payment succeeds. We verify the
  * call is genuinely from Stripe (HMAC signature), then send:
  *   1. a branded booking confirmation to the customer
- *   2. an urgent "deposit paid" notification to the MB Storage inbox
+ *   2. an urgent "paid in full" notification to the MB Storage inbox
  *
  * Because Batley and Liversedge are separate Stripe accounts, BOTH webhook
  * signing secrets are configured and each incoming event is verified against
@@ -110,26 +110,25 @@ function customerHtml(name, m, amount) {
     '<tr><td style="height:5px;background:#00A34A"></td></tr>' +
     '<tr><td style="padding:28px">' +
       '<p style="margin:0 0 12px;font-size:16px;color:#22303a">Hi ' + esc(name) + ',</p>' +
-      '<p style="margin:0 0 20px;font-size:15px;color:#5b5648;line-height:1.6"><strong style="color:#008a3f">Your deposit is paid and your booking is in.</strong> Here\'s what we have - we\'ll be in touch very shortly (usually the same day) to confirm your move-in and get your padlock and phone access sorted.</p>' +
+      '<p style="margin:0 0 20px;font-size:15px;color:#5b5648;line-height:1.6"><strong style="color:#008a3f">You\'re booked and fully paid - your unit is secured.</strong> We\'ll be in touch very shortly (usually the same day) to confirm your move-in and get your padlock and phone access sorted.</p>' +
       '<div style="background:#f7f6f3;border:1px solid #e4e1da;border-radius:12px;padding:18px 20px;margin-bottom:20px">' +
         '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:700">Your booking</p>' +
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' +
           row('Unit', m.unitLabel || (m.container_size + ' container')) +
           row('Site', m.site || '-') + extra +
           '<tr><td colspan="2" style="border-top:1px solid #e4e1da;padding-top:10px"></td></tr>' +
-          row('Deposit paid', amount) +
+          (m.deposit_paid ? row('Refundable deposit', m.deposit_paid) : '') +
+          (m.rent_paid ? row('First rent payment (' + (m.rent_period || 'to month end') + ')', m.rent_paid) : '') +
+          row('Total paid', amount) +
         '</table>' +
-        '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found.</p>' +
+        '<p style="margin:12px 0 0;font-size:13px;color:#5b5648;line-height:1.5">Your deposit is refunded in full when you leave, provided the unit is left as it was found. Your rent is paid up for ' + esc(m.rent_period || 'the period shown') + ' - after that, rent is invoiced monthly on the 1st.</p>' +
       '</div>' +
-      '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">One step left before move-in</p>' +
-      '<p style="margin:0 0 16px;font-size:14px;color:#22303a;line-height:1.6">We\'ll email your first invoice, covering the rest of the current month (charged pro-rata up to the 1st). <strong>Once that\'s paid, you can move in</strong> - often the same day. From then on, rent is invoiced monthly on the 1st.</p>' +
-      '<p style="margin:0 0 16px;font-size:13px;color:#b3261e;line-height:1.6;background:#fdeaea;border-radius:8px;padding:10px 14px"><strong>Please pay your first invoice within 3 days of booking.</strong> Demand for units is high, so if it isn\'t paid within 3 days we have to release your unit to the next customer.</p>' +
       '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:700">What happens next</p>' +
       '<ul style="margin:0 0 20px;padding-left:18px;color:#5b5648;font-size:14px;line-height:1.7">' +
         '<li>We\'ll call or email to confirm your move-in date and unit</li>' +
-        '<li>Your first invoice follows by email - the rest of this month, pro-rata</li>' +
-        '<li>Pay it and you\'ll get your high-quality padlock and mobile phone gate access</li>' +
+        '<li>You\'ll get your high-quality padlock and mobile phone gate access</li>' +
         '<li>Move in - often the same day</li>' +
+        '<li>Nothing more to pay until the 1st' + (m.payment_preference && m.payment_preference !== 'Monthly' ? ' - and we\'ll be in touch as soon as possible with your discounted ' + esc(m.payment_preference) + ' invoice' : '') + '</li>' +
       '</ul>' +
       '<a href="tel:+447375355233" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Questions? Call 07375 355233</a>' +
     '</td></tr>' +
@@ -144,22 +143,21 @@ function customerHtml(name, m, amount) {
 function customerText(name, m, amount) {
   return [
     'Hi ' + name + ',', '',
-    'Your deposit is paid and your booking is in. We\'ll be in touch very shortly (usually the same day) to confirm your move-in.', '',
+    'You\'re booked and fully paid - your unit is secured. We\'ll be in touch very shortly (usually the same day) to confirm your move-in.', '',
     'YOUR BOOKING', '----------------------------------------',
     'Unit: ' + (m.unitLabel || m.container_size),
     'Site: ' + (m.site || '-'),
-    (m.move_in_date ? 'Preferred move-in date: ' + m.move_in_date : null),
-    (m.payment_preference ? 'Payment preference: ' + m.payment_preference + ' (reflected in your first invoice)' : null),
-    'Deposit paid: ' + amount, '',
-    'Your deposit is refunded in full when you leave, provided the unit is left as it was found.', '',
-    'ONE STEP LEFT BEFORE MOVE-IN', '----------------------------------------',
-    'We\'ll email your first invoice, covering the rest of the current month (charged pro-rata up to the 1st). Once that\'s paid, you can move in - often the same day. From then on, rent is invoiced monthly on the 1st.', '',
-    'PLEASE PAY YOUR FIRST INVOICE WITHIN 3 DAYS OF BOOKING. Demand for units is high, so if it isn\'t paid within 3 days we have to release your unit to the next customer.', '',
+    (m.move_in_date ? 'Move-in date: ' + m.move_in_date : null),
+    (m.payment_preference && m.payment_preference !== 'Monthly' ? 'Payment preference: ' + m.payment_preference + ' (we\'ll be in touch as soon as possible with your discounted invoice)' : null),
+    (m.deposit_paid ? 'Refundable deposit: ' + m.deposit_paid : null),
+    (m.rent_paid ? 'First rent payment (' + (m.rent_period || 'to month end') + '): ' + m.rent_paid : null),
+    'Total paid: ' + amount, '',
+    'Your deposit is refunded in full when you leave, provided the unit is left as it was found. Your rent is paid up for ' + (m.rent_period || 'the period shown') + ' - after that, rent is invoiced monthly on the 1st.', '',
     'WHAT HAPPENS NEXT', '----------------------------------------',
     '- We\'ll call or email to confirm your move-in date and unit',
-    '- Your first invoice follows by email - the rest of this month, pro-rata',
-    '- Pay it and you\'ll get your padlock and mobile phone gate access',
-    '- Move in - often the same day', '',
+    '- You\'ll get your padlock and mobile phone gate access',
+    '- Move in - often the same day',
+    '- Nothing more to pay until the 1st', '',
     'Questions? Call 07375 355233.', '',
     'Kind regards,', 'MB Storage',
     '07375 355233 | info@mbstorage.co.uk | mbstorage.co.uk'
@@ -172,8 +170,8 @@ function notifyHtml(m, email, amount) {
            '</td><td style="padding:5px 0;color:#22303a;font-size:14px;font-weight:600">' + esc(v || ' - ') + '</td></tr>';
   };
   return '<div style="font-family:Segoe UI,Arial,sans-serif;color:#22303a">' +
-    '<h2 style="color:#008a3f">NEW BOOKING - deposit paid (' + esc(amount) + ')</h2>' +
-    '<p style="color:#b3261e;font-weight:700">Action needed: confirm move-in and send the first invoice.</p>' +
+    '<h2 style="color:#008a3f">NEW BOOKING - PAID IN FULL (' + esc(amount) + ')</h2>' +
+    '<p style="color:#b3261e;font-weight:700">Action needed: confirm move-in, sort padlock and gate access, and raise the first invoice in QuickBooks marked as paid.</p>' +
     '<table role="presentation" cellpadding="0" cellspacing="0">' +
       row('Name', m.name) + row('Email', email) + row('Phone', m.phone) +
       row('Unit', m.unitLabel || m.container_size) +
@@ -181,7 +179,9 @@ function notifyHtml(m, email, amount) {
       row('Move-in date', m.move_in_date) +
       row('Storing', m.storing) +
       row('Payment preference', m.payment_preference) +
-      row('Deposit paid', amount) +
+      row('Deposit paid', m.deposit_paid) +
+      row('Rent paid (' + (m.rent_period || 'first period') + ')', m.rent_paid) +
+      row('TOTAL PAID', amount) +
       row('Agreed to T&Cs', m.terms_agreed) +
     '</table></div>';
 }
@@ -216,14 +216,14 @@ exports.handler = async function (event) {
     if (email) {
       await send({
         from: FROM, to: [email], reply_to: TO,
-        subject: 'Booking confirmed - your MB Storage deposit is paid',
+        subject: 'Booking confirmed - your MB Storage unit is secured and paid',
         html: customerHtml(name, m, amount),
         text: customerText(name, m, amount)
       });
     }
     await send({
       from: FROM, to: [TO], reply_to: email || TO,
-      subject: 'NEW BOOKING - deposit paid - ' + name + ' (' + (m.site || '?') + ')',
+      subject: 'NEW BOOKING PAID IN FULL - ' + name + ' (' + (m.site || '?') + ')',
       html: notifyHtml(m, email, amount)
     });
   } catch (err) {

@@ -275,9 +275,9 @@ function customerHtml(name, u, incVat, d, state) {
       (state === 'book' ?
         '<div style="background:#f0faf4;border:2px solid #00A34A;border-radius:12px;padding:18px 20px;margin-bottom:18px;text-align:center">' +
           '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:800">Happy with your price?</p>' +
-          '<p style="margin:0 0 14px;font-size:14px;color:#5b5648;line-height:1.5">Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked.</p>' +
+          '<p style="margin:0 0 14px;font-size:14px;color:#5b5648;line-height:1.5">Secure your unit right now - one online payment covers your refundable ' + money(u.deposit) + ' deposit plus your rent to the end of the month (pro-rata), and you\'re fully booked with nothing more to pay until the 1st.</p>' +
           '<a href="' + bookingUrl(d) + '" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:999px;font-size:16px">Book online now</a>' +
-          '<p style="margin:14px 0 0;font-size:12px;color:#5b5648;line-height:1.6;text-align:left">Because availability is limited, online bookings can be made up to <strong>3 days in advance</strong>, and your first invoice (the rest of the month\'s hire) must be paid within <strong>3 days of booking</strong> - otherwise we have to release your unit to the next customer. Want to move in further ahead? Just reply to this email or call <a href="tel:+447375355233" style="color:#008a3f">07375 355233</a> and we\'ll see what we can arrange.</p>' +
+          '<p style="margin:14px 0 0;font-size:12px;color:#5b5648;line-height:1.6;text-align:left">Because availability is limited, online bookings can be made up to <strong>3 days in advance</strong>. Moving in within 7 days of the end of the month? Your first payment covers the following month too, so you\'re not invoiced again days later. Want to move in further ahead? Just reply to this email or call <a href="tel:+447375355233" style="color:#008a3f">07375 355233</a> and we\'ll see what we can arrange.</p>' +
         '</div>' : '') +
       (state === 'later' ?
         '<div style="background:#e9eff4;border:2px solid #1E4C6B;border-radius:12px;padding:18px 20px;margin-bottom:18px">' +
@@ -338,10 +338,10 @@ function customerText(name, u, incVat, d, state) {
     '- Round-the-clock support', '',
     (state === 'book' ? 'HAPPY WITH YOUR PRICE? BOOK ONLINE NOW' : null),
     (state === 'book' ? '----------------------------------------' : null),
-    (state === 'book' ? 'Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked:' : null),
+    (state === 'book' ? 'Secure your unit right now - one online payment covers your refundable ' + money(u.deposit) + ' deposit plus your rent to the end of the month (pro-rata), and you\'re fully booked with nothing more to pay until the 1st:' : null),
     (state === 'book' ? bookingUrl(d) : null),
     (state === 'book' ? '' : null),
-    (state === 'book' ? 'Please note: because availability is limited, online bookings can be made up to 3 days in advance, and your first invoice (the rest of the month\'s hire) must be paid within 3 days of booking - otherwise we have to release your unit to the next customer. Want to move in further ahead? Reply to this email or call 07375 355233 and we\'ll see what we can arrange.' : null),
+    (state === 'book' ? 'Please note: because availability is limited, online bookings can be made up to 3 days in advance. Moving in within 7 days of the end of the month? Your first payment covers the following month too, so you\'re not invoiced again days later. Want to move in further ahead? Reply to this email or call 07375 355233 and we\'ll see what we can arrange.' : null),
     (state === 'book' ? '' : null),
     (state === 'later' ? 'PLANNING AHEAD?' : null),
     (state === 'later' ? '----------------------------------------' : null),

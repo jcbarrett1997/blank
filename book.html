@@ -48,7 +48,7 @@
     <div class="container" style="max-width:820px">
       <div class="quote-note">
         <span class="icon">🔒</span>
-        <p><strong>How it works:</strong> today you pay the <strong>refundable deposit only</strong>, by secure card payment (powered by Stripe). That reserves your unit. Before you move in, we'll invoice you for the rest of the current month (charged pro-rata up to the 1st) - once that's paid, you get your padlock and gate access and you're in. <strong>Your first invoice must be paid within 3 days of booking</strong> - demand is high, so after that we have to release your unit to the next customer. From then on, rent is invoiced monthly on the 1st. Not ready to commit? <a href="quote.html">Get an instant quote by email</a> first.</p>
+        <p><strong>How it works:</strong> you pay once, by secure card payment (powered by Stripe): your <strong>refundable deposit</strong> plus your <strong>first rent payment</strong> - the rest of the current month, worked out pro-rata from your move-in date. Moving in within 7 days of the end of the month? Your first payment covers the following month too, so you're not invoiced again days later. Once paid, your unit is fully secured - padlock and gate access sorted, move in often the same day, and nothing more to pay until the 1st. You'll see your exact total on the secure payment page before entering any card details. Not ready to commit? <a href="quote.html">Get an instant quote by email</a> first.</p>
       </div>
 
       <form id="book-form" class="form-card" action="/.netlify/functions/book" method="POST">
@@ -87,9 +87,9 @@
             <input id="b-phone" type="tel" name="phone" required autocomplete="tel">
           </div>
           <div>
-            <label for="b-date">Preferred move-in date</label>
-            <input id="b-date" type="date" name="move_in_date">
-            <p class="hint">Book up to 3 days ahead - moving in later than that? <a href="contact.html">Get in touch</a> or call <a href="tel:+447375355233">07375 355233</a> and we'll see what we can arrange.</p>
+            <label for="b-date">Move-in date *</label>
+            <input id="b-date" type="date" name="move_in_date" required>
+            <p class="hint">Your first rent payment is worked out from this date. Book up to 3 days ahead - moving in later than that? <a href="contact.html">Get in touch</a> or call <a href="tel:+447375355233">07375 355233</a> and we'll see what we can arrange.</p>
           </div>
           <div>
             <label for="b-paypref">How would you like to pay? *</label>
@@ -98,7 +98,7 @@
               <option value="6 months upfront">6 months upfront - save 5%</option>
               <option value="12 months upfront">12 months upfront - save 10%</option>
             </select>
-            <p class="hint">Today you still only pay the deposit - your choice is reflected in your first invoice.</p>
+            <p class="hint">Monthly: pay by card today. Upfront options: nothing to pay by card today - we'll be in touch as soon as possible with your invoice at the discounted rate.</p>
           </div>
           <div class="full">
             <label for="b-storing">What will you be storing?</label>
@@ -111,9 +111,9 @@
             </div>
           </div>
           <div class="full">
-            <button type="submit" class="btn btn-primary" style="width:100%">Book now - pay my refundable deposit</button>
+            <button type="submit" class="btn btn-primary" style="width:100%">Book now - secure my unit</button>
             <div id="book-status" class="status-msg" role="status"></div>
-            <p class="hint center mt-1">Today you pay the deposit only: £150 (20ft) / £75 (8ft), refunded in full when you leave provided the unit is left as found. Your first rent invoice (the rest of this month, pro-rata) follows by email and is payable before move-in. Secure card payment by Stripe - your card details never touch our site.</p>
+            <p class="hint center mt-1">Paying monthly? One card payment today: your refundable deposit (£150 for a 20ft / £75 for an 8ft) plus your first rent payment, pro-rata to the end of the month - the exact total is shown on the secure payment page before you enter any card details (powered by Stripe; your card details never touch our site). Paying upfront? Nothing to pay by card today - your discounted invoice follows by email.</p>
           </div>
         </div>
       </form>
@@ -130,12 +130,13 @@
       <h2>Booking questions, answered</h2>
       <details>
         <summary>What am I paying today?</summary>
-        <p>Just the refundable deposit - £150 for a 20ft container or £75 for an 8ft. It secures your unit and is refunded in full when you leave, provided the unit is left as it was found.</p>
+        <p>Two things, in one payment: your refundable deposit (£150 for a 20ft container, £75 for an 8ft), plus your first rent payment - the rest of the current month, worked out daily from your move-in date. For example, move in on the 17th of July and your rent covers the 17th to the 31st. The deposit is refunded in full when you leave, provided the unit is left as it was found.</p>
+        <p>Moving in within 7 days of the end of the month? Your first payment also covers the following month, so we're not invoicing you again days after you've just paid.</p>
+        <p>Choosing to pay 6 or 12 months upfront? Then there's nothing to pay by card today - we'll be in touch as soon as possible with your invoice at the discounted rate. Note that a booking request doesn't reserve your unit: units go to whoever pays first, so yours is secured once your invoice is paid.</p>
       </details>
       <details>
-        <summary>When do I pay rent, and when can I move in?</summary>
-        <p>After your deposit, we'll email you an invoice for the rest of the current month - charged pro-rata up to the 1st. For example, book on the 17th of July and your first invoice covers the 17th to the 31st. Once that invoice is paid, you can move in - often the same day. From then on, rent is invoiced monthly on the 1st.</p>
-        <p><strong>Please pay your first invoice within 3 days of booking.</strong> Demand for units is high, so if it isn't paid within 3 days we have to release your unit to the next customer.</p>
+        <summary>When can I move in, and when is the next payment?</summary>
+        <p>You're fully paid up the moment you book - so once we've confirmed your unit and sorted your padlock and gate access, you can move in, often the same day. Your next payment isn't until the 1st of the following month, invoiced by email as normal.</p>
       </details>
       <details>
         <summary>Is the payment secure?</summary>
@@ -151,7 +152,7 @@
       </details>
       <details>
         <summary>What if I change my mind?</summary>
-        <p>No problem - there's no long-term contract, and if you decide not to go ahead before moving in, just call us and we'll refund your deposit.</p>
+        <p>No problem - there's no long-term contract, and if you decide not to go ahead before moving in, just call us and we'll refund your payment.</p>
       </details>
     </div>
   </section>

@@ -88,6 +88,15 @@ Then swap to the live keys and redeploy.
 
 ## What is charged
 
-The **refundable deposit only**: £150 (20ft) / £75 (8ft) - amounts are set
-server-side in `netlify/functions/book.js`. Monthly rent continues to be
-invoiced from QuickBooks as normal.
+One payment at booking, calculated server-side in `netlify/functions/book.js`:
+
+- **Refundable deposit**: £150 (20ft) / £75 (8ft)
+- **First rent payment**: pro-rata (daily rate) from the move-in date to the
+  end of that month, plus VAT. If the move-in date is within 7 days of the
+  month end, the following month is included too, so the customer isn't
+  invoiced again days after paying.
+
+Paying in full at booking means a unit is only ever held by cleared money -
+there is no invoice-chase window and no double-booking race on the last
+unit. Raise the matching first invoice in QuickBooks marked as paid; rent
+is invoiced monthly on the 1st thereafter.
