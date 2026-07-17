@@ -71,6 +71,21 @@ exports.handler = async function (event) {
   if (!d.name || !String(d.name).trim()) return json(400, { ok: false, error: 'Please tell us your name.' });
   if (!d.email || String(d.email).indexOf('@') === -1) return json(400, { ok: false, error: 'A valid email is required.' });
   if (!d.phone || !String(d.phone).trim()) return json(400, { ok: false, error: 'A phone number is required.' });
+  if (d.terms_agreed !== 'yes' && d.terms_agreed !== 'on' && d.terms_agreed !== true) {
+    return json(400, { ok: false, error: 'Please confirm you agree to our Terms & Conditions.' });
+  }
+
+  // Bookings are only taken up to 3 days ahead - we can't guarantee
+  // availability further out (browser enforces this too; this is the backstop)
+  if (d.move_in_date) {
+    var picked = new Date(d.move_in_date + 'T12:00:00');
+    var latest = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    latest.setHours(23, 59, 59, 999);
+    var earliest = new Date(); earliest.setHours(0, 0, 0, 0);
+    if (isNaN(picked.getTime()) || picked > latest || picked < earliest) {
+      return json(400, { ok: false, error: 'Bookings can be made up to 3 days in advance. For later move-in dates, please get a quote and we\'ll pencil you in.' });
+    }
+  }
 
   var key = process.env[site.keyEnv];
   if (!key) return json(503, { ok: false, error: 'Online booking is not available just yet. Please use the quote form or call 07375 355233.' });
@@ -98,6 +113,7 @@ exports.handler = async function (event) {
   });
   form.append('metadata[site]', site.label);
   form.append('metadata[container_size]', d.container_size);
+  form.append('metadata[terms_agreed]', 'yes - ' + new Date().toISOString());
 
   try {
     var r = await fetch('https://api.stripe.com/v1/checkout/sessions', {

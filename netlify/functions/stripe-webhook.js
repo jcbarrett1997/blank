@@ -173,6 +173,7 @@ function notifyHtml(m, email, amount) {
       row('Move-in date', m.move_in_date) +
       row('Storing', m.storing) +
       row('Deposit paid', amount) +
+      row('Agreed to T&Cs', m.terms_agreed) +
     '</table></div>';
 }
 

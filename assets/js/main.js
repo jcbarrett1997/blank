@@ -26,9 +26,23 @@ document.addEventListener('DOMContentLoaded', function () {
    Live availability (from /.netlify/functions/availability) is shown as
    a hint under the size selector and full options are disabled.
 ------------------------------------------------------------------- */
+/* Bookings are only taken up to 3 days ahead - we can't guarantee
+   availability further out. Clamp the date picker to today..+3 days. */
+function clampBookingDate(input) {
+  if (!input) return;
+  var fmt = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var today = new Date();
+  var max = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000);
+  input.min = fmt(today);
+  input.max = fmt(max);
+}
+
 function initBookingForm() {
   var form = document.getElementById('book-form');
   if (!form) return;
+  clampBookingDate(document.getElementById('b-date'));
   var status = document.getElementById('book-status');
   var btn = form.querySelector('button[type="submit"]');
   var siteSel = document.getElementById('b-site');
