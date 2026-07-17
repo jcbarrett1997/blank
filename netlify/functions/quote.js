@@ -146,8 +146,13 @@ async function subscribeToMailerLite(d) {
    this is the moment they can commit. Only offered once online booking is
    switched on (BOOKING_LIVE=true in Netlify) - until then the quote email
    sticks to reply/call/WhatsApp. */
+function bookingLive() {
+  var v = String(process.env.BOOKING_LIVE || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+  return v === 'true' || v === 'yes' || v === '1' || v === 'on';
+}
+
 function bookingUrl(d) {
-  if (process.env.BOOKING_LIVE !== 'true') return null;
+  if (!bookingLive()) return null;
   var q = new URLSearchParams();
   q.set('size', d.container_size || '');
   var site = (d.preferred_site || '').toLowerCase();
@@ -324,6 +329,9 @@ exports.handler = async function (event) {
 
   var name = (d.name || 'there').toString().trim() || 'there';
   var incVat = u.pcmExVat * (1 + VAT_RATE);
+
+  // Visible in Netlify function logs - confirms whether the booking flag reached us
+  console.log('BOOKING_LIVE raw value:', JSON.stringify(process.env.BOOKING_LIVE), '-> booking button:', bookingLive() ? 'ON' : 'OFF');
 
   var send = makeSender();
 
