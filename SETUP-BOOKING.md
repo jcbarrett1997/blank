@@ -4,6 +4,16 @@ Online booking stays **dormant until configured** - the page is live, but
 anyone submitting is told booking isn't available yet and pointed to the
 quote form / phone. To switch it on, complete the three parts below.
 
+## How booking reaches customers (email-first funnel)
+
+Customers should only be asked to pay a deposit AFTER they know their
+price, so the booking page is deliberately NOT linked from the public site.
+Instead, once `BOOKING_LIVE=true` is set in Netlify, every quote email
+includes a **"Book online now"** button that links to the booking page with
+the customer's size, site and details pre-filled. Quote → price in inbox →
+book from the email. Until that flag is set, quote emails stick to
+reply / call / WhatsApp.
+
 Batley and Liversedge are **separate companies with separate bank accounts**,
 so each has its own Stripe account and the site routes each booking's payment
 to the right one automatically.
@@ -64,6 +74,17 @@ Use each Stripe account's **test mode** key + webhook first: book with card
 number `4242 4242 4242 4242` (any future expiry/CVC). Check the confirmation
 email, the internal notification, and the payment in the Stripe dashboard.
 Then swap to the live keys and redeploy.
+
+## Go-live checklist
+
+1. Both companies verified by Stripe; live secret keys in Netlify
+2. Webhook destinations created in **live mode**, live signing secrets in Netlify
+3. Availability sheet published and `AVAILABILITY_SHEET_CSV_URL` set
+4. Set `BOOKING_LIVE=true` in Netlify - this adds the "Book online now"
+   button to quote emails
+5. Remove the "final testing" banner from book.html
+6. Trigger deploy, request a real quote, book from the email with a real
+   card, then refund yourself in the Stripe dashboard
 
 ## What is charged
 

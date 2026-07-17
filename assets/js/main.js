@@ -43,6 +43,19 @@ function initBookingForm() {
   var form = document.getElementById('book-form');
   if (!form) return;
   clampBookingDate(document.getElementById('b-date'));
+
+  // Pre-fill from the quote email's "Book online now" link
+  var params = new URLSearchParams(window.location.search);
+  [['site', 'b-site'], ['size', 'b-size'], ['name', 'b-name'], ['email', 'b-email'], ['phone', 'b-phone']].forEach(function (pair) {
+    var val = params.get(pair[0]);
+    var el = document.getElementById(pair[1]);
+    if (!val || !el) return;
+    if (el.tagName === 'SELECT') {
+      if (el.querySelector('option[value="' + val + '"]')) el.value = val;
+    } else {
+      el.value = val;
+    }
+  });
   var status = document.getElementById('book-status');
   var btn = form.querySelector('button[type="submit"]');
   var siteSel = document.getElementById('b-site');

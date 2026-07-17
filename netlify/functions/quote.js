@@ -142,6 +142,22 @@ async function subscribeToMailerLite(d) {
   }
 }
 
+/* Booking from the quote email: the customer has just seen their price, so
+   this is the moment they can commit. Only offered once online booking is
+   switched on (BOOKING_LIVE=true in Netlify) - until then the quote email
+   sticks to reply/call/WhatsApp. */
+function bookingUrl(d) {
+  if (process.env.BOOKING_LIVE !== 'true') return null;
+  var q = new URLSearchParams();
+  q.set('size', d.container_size || '');
+  var site = (d.preferred_site || '').toLowerCase();
+  if (site === 'batley' || site === 'liversedge') q.set('site', site);
+  if (d.name) q.set('name', String(d.name).slice(0, 100));
+  if (d.email) q.set('email', String(d.email).slice(0, 100));
+  if (d.phone) q.set('phone', String(d.phone).slice(0, 30));
+  return SITE + '/book.html?' + q.toString();
+}
+
 function customerHtml(name, u, incVat, d) {
   var row = function (label, val) {
     return '<tr><td style="padding:6px 0;color:#5b5648;font-size:14px">' + esc(label) +
@@ -204,11 +220,17 @@ function customerHtml(name, u, incVat, d) {
         '<li>Mobile phone entry - open the gates from your phone</li>' +
         '<li>Round-the-clock support</li>' +
       '</ul>' +
+      (bookingUrl(d) ?
+        '<div style="background:#f0faf4;border:2px solid #00A34A;border-radius:12px;padding:18px 20px;margin-bottom:18px;text-align:center">' +
+          '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:800">Happy with your price?</p>' +
+          '<p style="margin:0 0 14px;font-size:14px;color:#5b5648;line-height:1.5">Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked.</p>' +
+          '<a href="' + bookingUrl(d) + '" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:999px;font-size:16px">Book online now</a>' +
+        '</div>' : '') +
       '<table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
-        '<td style="padding:0 10px 10px 0"><a href="tel:+447375355233" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a></td>' +
+        '<td style="padding:0 10px 10px 0"><a href="tel:+447375355233" style="display:inline-block;background:' + (bookingUrl(d) ? '#1E4C6B' : '#00A34A') + ';color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a></td>' +
         '<td style="padding:0 0 10px 0"><a href="https://wa.me/447375355233?text=' + encodeURIComponent("Hi MB Storage, I've just received my quote and I'd like to go ahead.") + '" style="display:inline-block;background:#25D366;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">WhatsApp us</a></td>' +
       '</tr></table>' +
-      '<p style="margin:12px 0 0;font-size:14px;color:#5b5648;line-height:1.6">Spaces like this don\'t hang around long. Reply to this email, WhatsApp us or give us a call and we\'ll get you moved in - often the same day.</p>' +
+      '<p style="margin:12px 0 0;font-size:14px;color:#5b5648;line-height:1.6">Spaces like this don\'t hang around long. ' + (bookingUrl(d) ? 'Book online above, reply to this email, WhatsApp us or give us a call' : 'Reply to this email, WhatsApp us or give us a call') + ' and we\'ll get you moved in - often the same day.</p>' +
     '</td></tr>' +
     '<tr><td style="background:#22190A;padding:18px 28px;color:#cfc9bd;font-size:12px">' +
       'MB Storage &middot; <a href="tel:+447375355233" style="color:#cfc9bd">07375 355233</a> &middot; ' +
@@ -248,6 +270,11 @@ function customerText(name, u, incVat, d) {
     '- 24/7 CCTV with motion-sensing cameras',
     '- Mobile phone entry - open the gates from your phone',
     '- Round-the-clock support', '',
+    (bookingUrl(d) ? 'HAPPY WITH YOUR PRICE? BOOK ONLINE NOW' : null),
+    (bookingUrl(d) ? '----------------------------------------' : null),
+    (bookingUrl(d) ? 'Secure your unit right now - pay just the refundable ' + money(u.deposit) + ' deposit online and you\'re booked:' : null),
+    (bookingUrl(d) ? bookingUrl(d) : null),
+    (bookingUrl(d) ? '' : null),
     "Spaces like this don't hang around long. Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we'll get you moved in - often the same day.", '',
     'Kind regards,', 'MB Storage',
     '07375 355233 | WhatsApp: wa.me/447375355233 | info@mbstorage.co.uk | mbstorage.co.uk'
