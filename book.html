@@ -48,7 +48,14 @@
     <div class="container" style="max-width:820px">
       <div class="quote-note">
         <span class="icon">🔒</span>
-        <p><strong>How it works:</strong> you pay once, by secure card payment (powered by Stripe): your <strong>refundable deposit</strong> plus your <strong>first rent payment</strong> - the rest of the current month, worked out pro-rata from your move-in date. Moving in within 7 days of the end of the month? Your first payment covers the following month too, so you're not invoiced again days later. Once paid, your unit is fully secured - padlock and gate access sorted, move in often the same day, and nothing more to pay until the 1st. You'll see your exact total on the secure payment page before entering any card details. Not ready to commit? <a href="quote.html">Get an instant quote by email</a> first.</p>
+        <div style="width:100%">
+          <p style="margin:0 0 .6rem"><strong>How it works</strong> - one secure card payment (powered by Stripe) covers:</p>
+          <ul style="margin:0 0 .6rem;padding-left:1.2rem;line-height:1.7">
+            <li>Your <strong>refundable deposit</strong></li>
+            <li>Your <strong>first rent payment</strong> - the rest of the month, pro-rata from your move-in date (moving in within 7 days of month end? next month's included too, so you're not invoiced again days later)</li>
+          </ul>
+          <p style="margin:0">Your exact total is shown before you enter any card details. Once paid, you're fully booked - padlock and gate access sorted, move in often the same day, nothing more to pay until the 1st.</p>
+        </div>
       </div>
 
       <form id="book-form" class="form-card" action="/.netlify/functions/book" method="POST">
