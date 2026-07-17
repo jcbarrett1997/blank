@@ -63,6 +63,126 @@ function rentBreakdown(u, moveInISO) {
 
 function money(pence) { return '£' + (pence / 100).toFixed(2); }
 
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* Same provider-agnostic sender as quote.js (Mailgun or Resend). */
+function makeSender() {
+  if (process.env.RESEND_API_KEY) {
+    return async function (msg) {
+      var r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg)
+      });
+      if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()));
+      return r.json();
+    };
+  }
+  return async function (msg) {
+    var base = process.env.MAILGUN_API_BASE || 'https://api.mailgun.net';
+    var form = new URLSearchParams();
+    form.append('from', msg.from);
+    form.append('to', Array.isArray(msg.to) ? msg.to.join(',') : msg.to);
+    if (msg.reply_to) form.append('h:Reply-To', msg.reply_to);
+    form.append('subject', msg.subject);
+    if (msg.html) form.append('html', msg.html);
+    if (msg.text) form.append('text', msg.text);
+    var r = await fetch(base + '/v3/' + process.env.MAILGUN_DOMAIN + '/messages', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from('api:' + process.env.MAILGUN_API_KEY).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: form.toString()
+    });
+    if (!r.ok) throw new Error('Mailgun ' + r.status + ': ' + (await r.text()));
+    return r.json();
+  };
+}
+
+var FROM = process.env.MAIL_FROM || 'MB Storage <quotes@mbstorage.co.uk>';
+var TO   = process.env.MAIL_TO   || 'info@mbstorage.co.uk';
+
+/* Upfront (6/12 month) bookings skip card payment entirely - card fees on
+   those sums would be excessive. Instead the request is emailed to MB
+   Storage to raise a discounted invoice, and the customer is told it's on
+   its way. */
+async function handleUpfrontRequest(d, site, unit, rent) {
+  var pct = d.payment_preference.indexOf('12') === 0 ? '10%' : '5%';
+  var send = makeSender();
+
+  var rowH = function (k, v) {
+    return '<tr><td style="padding:5px 12px 5px 0;color:#5b5648;font-size:14px">' + esc(k) +
+           '</td><td style="padding:5px 0;color:#22303a;font-size:14px;font-weight:600">' + esc(v || ' - ') + '</td></tr>';
+  };
+
+  // 1) Customer acknowledgement
+  await send({
+    from: FROM, to: [String(d.email).trim()], reply_to: TO,
+    subject: 'Your MB Storage booking request - discounted invoice on its way',
+    html:
+      '<div style="background:#f2f5f8;padding:24px 0;font-family:Segoe UI,Arial,sans-serif">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
+      '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e4e1da">' +
+        '<tr><td style="background:#ffffff;padding:22px 28px" align="left"><img src="' + SITE + '/assets/img/logo-landscape@4x.png" alt="MB Storage" height="44" style="height:44px;display:block"></td></tr>' +
+        '<tr><td style="height:5px;background:#00A34A"></td></tr>' +
+        '<tr><td style="padding:28px">' +
+          '<p style="margin:0 0 12px;font-size:16px;color:#22303a">Hi ' + esc((d.name || 'there').trim()) + ',</p>' +
+          '<p style="margin:0 0 16px;font-size:15px;color:#5b5648;line-height:1.6"><strong style="color:#008a3f">Great choice - your booking request is in.</strong> Because you\'re paying ' + esc(d.payment_preference) + ' (saving ' + pct + '), there\'s nothing to pay by card today. We\'ll be in touch <strong>as soon as possible</strong> (usually the same day) with your invoice at the discounted rate.</p>' +
+          '<div style="background:#f7f6f3;border:1px solid #e4e1da;border-radius:12px;padding:18px 20px;margin-bottom:16px">' +
+            '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:700">Your request</p>' +
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' +
+              rowH('Unit', unit.label) + rowH('Site', site.label) +
+              rowH('Move-in date', d.move_in_date) +
+              rowH('Paying', d.payment_preference + ' (save ' + pct + ')') +
+            '</table>' +
+          '</div>' +
+          '<p style="margin:0 0 16px;font-size:13px;color:#5b5648;line-height:1.6">Your unit is secured once your invoice is paid - we\'ll move quickly so you can too. Questions in the meantime? Just reply to this email or call us.</p>' +
+          '<a href="tel:+447375355233" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call us: 07375 355233</a>' +
+        '</td></tr>' +
+        '<tr><td style="background:#22190A;padding:18px 28px;color:#cfc9bd;font-size:12px">MB Storage &middot; <a href="tel:+447375355233" style="color:#cfc9bd">07375 355233</a> &middot; <a href="mailto:info@mbstorage.co.uk" style="color:#cfc9bd">info@mbstorage.co.uk</a> &middot; <a href="' + SITE + '" style="color:#cfc9bd">mbstorage.co.uk</a></td></tr>' +
+      '</table></td></tr></table></div>',
+    text: [
+      'Hi ' + (d.name || 'there').trim() + ',', '',
+      'Great choice - your booking request is in. Because you\'re paying ' + d.payment_preference + ' (saving ' + pct + '), there\'s nothing to pay by card today.',
+      'We\'ll be in touch as soon as possible (usually the same day) with your invoice at the discounted rate.', '',
+      'YOUR REQUEST', '----------------------------------------',
+      'Unit: ' + unit.label,
+      'Site: ' + site.label,
+      'Move-in date: ' + d.move_in_date,
+      'Paying: ' + d.payment_preference + ' (save ' + pct + ')', '',
+      'Your unit is secured once your invoice is paid - we\'ll move quickly so you can too.', '',
+      'Questions? Reply to this email or call 07375 355233.', '',
+      'Kind regards,', 'MB Storage',
+      '07375 355233 | info@mbstorage.co.uk | mbstorage.co.uk'
+    ].join('\n')
+  });
+
+  // 2) Internal notification - urgent, an invoice needs raising
+  await send({
+    from: FROM, to: [TO], reply_to: String(d.email).trim(),
+    subject: 'UPFRONT BOOKING REQUEST - send discounted invoice - ' + (d.name || '?') + ' (' + site.label + ')',
+    html:
+      '<div style="font-family:Segoe UI,Arial,sans-serif;color:#22303a">' +
+      '<h2 style="color:#008a3f">UPFRONT BOOKING REQUEST - ' + esc(d.payment_preference) + '</h2>' +
+      '<p style="color:#b3261e;font-weight:700">Action needed ASAP: send the discounted invoice (' + pct + ' off) - the customer has been told it\'s on its way. No card payment was taken.</p>' +
+      '<table role="presentation" cellpadding="0" cellspacing="0">' +
+        rowH('Name', d.name) + rowH('Email', d.email) + rowH('Phone', d.phone) +
+        rowH('Unit', unit.label) + rowH('Site', site.label) +
+        rowH('Move-in date', d.move_in_date) +
+        rowH('Storing', d.storing) +
+        rowH('Paying', d.payment_preference + ' (' + pct + ' discount)') +
+        rowH('Reference - deposit', money(unit.depositPence)) +
+        rowH('Reference - standard first rent (' + rent.period + ')', money(rent.pence)) +
+        rowH('Agreed to T&Cs', 'yes - ' + new Date().toISOString()) +
+      '</table></div>'
+  });
+}
+
 function json(status, obj) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
 }
@@ -124,14 +244,26 @@ exports.handler = async function (event) {
   var rent = rentBreakdown(unit, d.move_in_date);
   if (!rent) return json(400, { ok: false, error: 'Please choose a valid move-in date.' });
 
-  var key = process.env[site.keyEnv];
-  if (!key) return json(503, { ok: false, error: 'Online booking is not available just yet. Please use the quote form or call 07375 355233.' });
-
   // Availability re-check (authoritative, server-side)
   var free = await unitsFree((d.site || '').toLowerCase(), d.container_size);
   if (free !== null && free <= 0) {
     return json(409, { ok: false, error: 'Sorry - that size has just sold out at ' + site.label + '. Call us on 07375 355233 and we\'ll help.' });
   }
+
+  // Upfront payers don't pay by card (fees would be excessive on those
+  // sums) - their request is emailed in and a discounted invoice follows
+  if (d.payment_preference === '6 months upfront' || d.payment_preference === '12 months upfront') {
+    try {
+      await handleUpfrontRequest(d, site, unit, rent);
+      return json(200, { ok: true, url: '/booking-requested.html' });
+    } catch (err) {
+      console.error(err);
+      return json(502, { ok: false, error: 'Could not send your request. Please try again or call 07375 355233.' });
+    }
+  }
+
+  var key = process.env[site.keyEnv];
+  if (!key) return json(503, { ok: false, error: 'Online booking is not available just yet. Please use the quote form or call 07375 355233.' });
 
   // Create the Stripe Checkout session (form-encoded REST call - no SDK needed)
   var form = new URLSearchParams();
