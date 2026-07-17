@@ -110,6 +110,31 @@ Repeat with `?site=liversedge` for:
 - `QUICKBOOKS_LIVERSEDGE_DEPOSIT_ITEM_ID`
 - `QUICKBOOKS_LIVERSEDGE_RENT_ITEM_ID`
 
+## 5b. Find and set the VAT code IDs (required for UK companies)
+
+UK QuickBooks companies reject any sale without a VAT code on every line
+("Business Validation Error: Make sure all your transactions have a VAT
+rate before you save"), so each line needs a VAT code. Visit:
+
+```
+https://www.mbstorage.co.uk/.netlify/functions/qb-list-taxcodes?site=batley&key=YOUR_SETUP_KEY
+```
+
+This lists the company's VAT codes with their IDs. The typical UK choice
+(confirm with your bookkeeper):
+
+- `QUICKBOOKS_BATLEY_RENT_TAX_CODE_ID` = the ID of **"20.0% S"** - the
+  rent amounts already include 20% VAT collected via Stripe, and the
+  receipt is marked VAT-inclusive so QuickBooks works the VAT backwards
+  from the gross figure
+- `QUICKBOOKS_BATLEY_DEPOSIT_TAX_CODE_ID` = the ID of **"No VAT"** -
+  refundable deposits are typically outside the scope of VAT
+
+Repeat with `?site=liversedge` for:
+
+- `QUICKBOOKS_LIVERSEDGE_RENT_TAX_CODE_ID`
+- `QUICKBOOKS_LIVERSEDGE_DEPOSIT_TAX_CODE_ID`
+
 Trigger a deploy again.
 
 ## 6. Test it

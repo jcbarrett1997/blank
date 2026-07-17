@@ -150,31 +150,52 @@ async function findOrCreateCustomer(company, d) {
 
 /* Records a completed sale (money already received via Stripe) as a
    QuickBooks Sales Receipt - the correct object for payment already in
-   hand, as opposed to an Invoice (which represents money still owed). */
+   hand, as opposed to an Invoice (which represents money still owed).
+
+   UK QuickBooks companies require a VAT code on every sales line
+   ("Business Validation Error: Make sure all your transactions have a
+   VAT rate before you save"), so each line carries a TaxCodeRef from:
+
+     QUICKBOOKS_<SITE>_RENT_TAX_CODE_ID     (rent includes 20% VAT, so
+                                             typically the "20.0% S" code)
+     QUICKBOOKS_<SITE>_DEPOSIT_TAX_CODE_ID  (deposits are typically
+                                             outside the scope of VAT -
+                                             the "No VAT" code)
+
+   Find each company's code IDs with qb-list-taxcodes.js. Amounts are sent
+   as VAT-inclusive (GlobalTaxCalculation: TaxInclusive) since the customer
+   already paid the gross figure through Stripe. */
 async function recordSalesReceipt(company, opts) {
-  var depositItemId = process.env['QUICKBOOKS_' + company.toUpperCase() + '_DEPOSIT_ITEM_ID'];
-  var rentItemId = process.env['QUICKBOOKS_' + company.toUpperCase() + '_RENT_ITEM_ID'];
+  var prefix = 'QUICKBOOKS_' + company.toUpperCase();
+  var depositItemId = process.env[prefix + '_DEPOSIT_ITEM_ID'];
+  var rentItemId = process.env[prefix + '_RENT_ITEM_ID'];
   if (!depositItemId || !rentItemId) {
     throw new Error('QuickBooks item IDs are not configured for ' + company + ' - see SETUP-QUICKBOOKS.md.');
   }
+  var depositTaxCodeId = process.env[prefix + '_DEPOSIT_TAX_CODE_ID'];
+  var rentTaxCodeId = process.env[prefix + '_RENT_TAX_CODE_ID'];
 
   var customer = await findOrCreateCustomer(company, opts);
 
   var lines = [];
   if (opts.depositAmount) {
+    var depositDetail = { ItemRef: { value: depositItemId }, Qty: 1, UnitPrice: opts.depositAmount };
+    if (depositTaxCodeId) depositDetail.TaxCodeRef = { value: depositTaxCodeId };
     lines.push({
       Amount: opts.depositAmount,
       DetailType: 'SalesItemLineDetail',
       Description: opts.depositLabel || 'Refundable deposit',
-      SalesItemLineDetail: { ItemRef: { value: depositItemId }, Qty: 1, UnitPrice: opts.depositAmount }
+      SalesItemLineDetail: depositDetail
     });
   }
   if (opts.rentAmount) {
+    var rentDetail = { ItemRef: { value: rentItemId }, Qty: 1, UnitPrice: opts.rentAmount };
+    if (rentTaxCodeId) rentDetail.TaxCodeRef = { value: rentTaxCodeId };
     lines.push({
       Amount: opts.rentAmount,
       DetailType: 'SalesItemLineDetail',
       Description: opts.rentLabel || 'First rent payment',
-      SalesItemLineDetail: { ItemRef: { value: rentItemId }, Qty: 1, UnitPrice: opts.rentAmount }
+      SalesItemLineDetail: rentDetail
     });
   }
   if (!lines.length) throw new Error('Nothing to record - no deposit or rent amount given.');
@@ -185,6 +206,9 @@ async function recordSalesReceipt(company, opts) {
     PrivateNote: 'Paid online via Stripe (' + (opts.reference || 'no reference') + '). Recorded automatically by the website.',
     Line: lines
   };
+  // The amounts the customer paid are gross (VAT already included), so
+  // tell QuickBooks to work backwards from them rather than adding VAT on top
+  if (depositTaxCodeId || rentTaxCodeId) payload.GlobalTaxCalculation = 'TaxInclusive';
   return qbRequest(company, 'POST', 'salesreceipt', payload);
 }
 
