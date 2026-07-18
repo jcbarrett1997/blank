@@ -148,6 +148,12 @@ async function handleUpfrontRequest(d, site, unit, rent) {
   var invoiceSent = !!(qbInvoice && qbInvoice.emailed);
   var invoiceNo = qbInvoice && qbInvoice.invoice && (qbInvoice.invoice.DocNumber || qbInvoice.invoice.Id);
 
+  // Mark as booked so quote follow-ups leave them alone (best-effort)
+  try {
+    var blobs = require('./lib/blobs');
+    await blobs.store('quote-log').setJSON('booked-' + String(d.email).trim().toLowerCase(), { ts: Date.now() });
+  } catch (e) { console.error('Booked marker failed:', e); }
+
   var send = makeSender();
 
   var rowH = function (k, v) {

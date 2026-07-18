@@ -12,3 +12,7 @@
 # Hourly: mark freshly-paid QuickBooks invoices in the Invoice Check sheet
 [functions."qb-paid-sync"]
   schedule = "0 * * * *"
+
+# Daily 8am UTC: quote follow-up emails + warm-leads WhatsApp digest
+[functions."quote-followup"]
+  schedule = "0 8 * * *"

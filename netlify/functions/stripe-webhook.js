@@ -273,5 +273,13 @@ exports.handler = async function (event) {
   // its emails are already done above regardless of what happens here)
   try { await syncToQuickBooks(m, email, s); } catch (err) { console.error('QuickBooks sync failed:', err); }
 
+  // Mark this customer as booked so quote follow-ups leave them alone
+  try {
+    if (email) {
+      var blobs = require('./lib/blobs');
+      await blobs.store('quote-log').setJSON('booked-' + String(email).trim().toLowerCase(), { ts: Date.now() });
+    }
+  } catch (err) { console.error('Booked marker failed:', err); }
+
   return { statusCode: 200, body: 'OK' };
 };

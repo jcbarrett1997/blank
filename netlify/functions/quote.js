@@ -435,5 +435,23 @@ exports.handler = async function (event) {
   // 3) Marketing sign-up (best-effort - never blocks the quote above)
   try { await subscribeToMailerLite(d); } catch (e) { console.error(e); }
 
+  // 4) Log the quote for follow-up (best-effort) - powers the daily
+  //    warm-leads digest and the day-2/day-7 follow-up emails
+  try {
+    var blobs = require('./lib/blobs');
+    var key = 'q-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    await blobs.store('quote-log').setJSON(key, {
+      ts: Date.now(),
+      name: name,
+      email: String(d.email).trim().toLowerCase(),
+      phone: d.phone || '',
+      size: d.container_size,
+      sizeLabel: u.label,
+      site: d.preferred_site || '',
+      storing: d.storing || '',
+      fu2: false, fu7: false
+    });
+  } catch (e) { console.error('Quote log failed:', e); }
+
   return wantsJson ? json(200, { ok: true }) : redirect();
 };
