@@ -12,8 +12,8 @@ var qb = require('./lib/quickbooks');
 exports.handler = async function (event) {
   var params = event.queryStringParameters || {};
   var site = (params.site || '').toLowerCase();
-  if (site !== 'batley' && site !== 'liversedge') {
-    return { statusCode: 400, body: 'Add ?site=batley or ?site=liversedge to the URL.' };
+  if (site !== 'batley' && site !== 'liversedge' && site !== 'brighouse') {
+    return { statusCode: 400, body: 'Add ?site=batley, ?site=liversedge or ?site=brighouse to the URL.' };
   }
   var setupKey = process.env.QUICKBOOKS_SETUP_KEY;
   if (setupKey && params.key !== setupKey) {
