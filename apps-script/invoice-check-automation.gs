@@ -23,6 +23,10 @@
 
 var SECRET = 'CHANGE_ME_TO_MATCH_NETLIFY';
 var NOTIFY_EMAIL = 'info@mbstorage.co.uk';
+// Traffic lights: green = paid, red = not yet paid, amber = empty unit
+var COLOR_PAID = '#57bb8a';
+var COLOR_UNPAID = '#e06666';
+var COLOR_EMPTY = '#f6b26b';
 var SITES = ['BRIGHOUSE', 'BATLEY', 'LIVERSEDGE'];
 // Fallback section start columns (0-based) if the header row can't be read
 var DEFAULT_SECTION_COLS = { BRIGHOUSE: 0, BATLEY: 7, LIVERSEDGE: 15 };
@@ -79,6 +83,7 @@ function sectionColumns_(sheet, sec, site) {
     if (h === 'time remaining') offsets.time = i;
     if (h === 'tick off') offsets.tick = i;
     if (h === 'amount due') offsets.amount = i;
+    if (h === 'unit') offsets.unit = i;
   }
   if (offsets.paid === undefined) offsets.paid = 3; // sensible default
   return { startCol: startCol, width: width, offsets: offsets };
@@ -140,11 +145,12 @@ function markPaid_(sheet, site, paidList, mapping) {
       if (!rowName || norm_(rowName) === 'empty') continue;
       if (norm_(rowName) === target || baseName_(rowName) === target) {
         var cur = String(values[r][colInfo.offsets.paid] || '').trim();
+        var cell = sheet.getRange(firstDataRow + r, colInfo.startCol + colInfo.offsets.paid + 1);
         if (!cur) {
-          sheet.getRange(firstDataRow + r, colInfo.startCol + colInfo.offsets.paid + 1)
-            .setValue('PAID');
+          cell.setValue('PAID');
           values[r][colInfo.offsets.paid] = 'PAID';
         }
+        cell.setBackground(COLOR_PAID); // red -> green, even if a human typed PAID first
         hit = true;
       }
     }
@@ -263,25 +269,36 @@ function createNextMonthTab() {
 
     for (var r = 0; r < values.length; r++) {
       var name = String(values[r][colInfo.offsets.name] || '').trim();
+      var unit = colInfo.offsets.unit !== undefined ? String(values[r][colInfo.offsets.unit] || '').trim() : '';
       var time = colInfo.offsets.time !== undefined ? values[r][colInfo.offsets.time] : '';
       var paidCell = copy.getRange(firstDataRow + r, colInfo.startCol + colInfo.offsets.paid + 1);
       if (colInfo.offsets.tick !== undefined) {
         copy.getRange(firstDataRow + r, colInfo.startCol + colInfo.offsets.tick + 1).setValue('');
       }
 
+      if (!name && !unit) continue; // filler row - leave untouched
+
+      // Empty unit: amber across the section row, no paid status
+      if (norm_(name) === 'empty' || (!name && unit)) {
+        paidCell.setValue('');
+        copy.getRange(firstDataRow + r, colInfo.startCol + 1, 1, colInfo.width)
+          .setBackground(COLOR_EMPTY);
+        continue;
+      }
+
       var ends = parseEndsDate_(time, now);
       if (String(time).toLowerCase().indexOf('end') !== -1 && !ends) {
         // Mentions "Ends" but unreadable - safest to keep PAID and flag for a human
-        paidCell.setValue('PAID');
+        paidCell.setValue('PAID').setBackground(COLOR_PAID);
         review.push(site + ': ' + name + ' ("' + time + '")');
       } else if (ends && ends >= nextStart) {
-        paidCell.setValue('PAID');
+        paidCell.setValue('PAID').setBackground(COLOR_PAID);
         prepaid.push(site + ': ' + name + ' (until ' + ends.toDateString() + ')');
       } else if (ends && ends < nextStart) {
-        paidCell.setValue('');
+        paidCell.setValue('').setBackground(COLOR_UNPAID);
         expired.push(site + ': ' + name + ' (prepaid ended ' + ends.toDateString() + ')');
       } else {
-        paidCell.setValue('');
+        paidCell.setValue('').setBackground(COLOR_UNPAID);
       }
     }
   });
