@@ -1,0 +1,77 @@
+{
+  "_comment": "MB Storage social post schedule. Edit dates (YYYY-MM-DD, Europe/London), captions or image files here. The social-post function publishes the next DUE, not-yet-posted entry once per day to the Facebook Page and (if IG_USER_ID is set) Instagram. Facebook GROUPS cannot be automated - keep pasting those by hand. After the last post, add new dates (or shift them) to keep the rotation going.",
+  "posts": [
+    {
+      "id": "01-intro",
+      "date": "2026-07-20",
+      "image": "assets/img/social/01-intro.jpg",
+      "caption": "Family-run, and proud of it. 👋\n\nMB Storage is a local, family business offering secure self storage across Batley, Liversedge and Brighouse - clean modern containers, 24/7 CCTV, and a real person on the end of the phone whenever you need one.\n\nWhether you're moving house, running out of space at work, or just need somewhere safe for a few months, we'll sort you out - often the same day.\n\n📩 Instant quote: mbstorage.co.uk\n📞 07375 355233\n\n#Batley #Liversedge #Brighouse #SelfStorage #WestYorkshire"
+    },
+    {
+      "id": "02-movinghouse",
+      "date": "2026-07-27",
+      "image": "assets/img/social/02-movinghouse.jpg",
+      "caption": "Moving house? 📦 Don't let the chain stress you out.\n\nA storage container gives you somewhere safe to put everything while the dates sort themselves out - rolling monthly, so you're not tied in, and 14 days' notice whenever you're ready to leave.\n\nSame-day move-in available. Get your price in under a minute 👇\nmbstorage.co.uk\n\n#HouseMove #Batley #Storage #WestYorkshire"
+    },
+    {
+      "id": "03-whatfits",
+      "date": "2026-08-03",
+      "image": "assets/img/social/03-whatfits.jpg",
+      "caption": "\"Will my stuff actually fit?\" 🤔\n\nOur 20ft container holds roughly the contents of a 3-4 bedroom house - furniture, white goods, boxes, bikes, the lot. About 160 sq ft of space, and you drive right up to the door.\n\nNot sure what size you need? We'll happily talk it through.\n\n📩 mbstorage.co.uk 📞 07375 355233\n\n#Storage #Batley #Liversedge #MovingHouse"
+    },
+    {
+      "id": "04-business",
+      "date": "2026-08-10",
+      "image": "assets/img/social/04-business.jpg",
+      "caption": "Running out of space at work? 🛠️\n\nLoads of local businesses use us for stock, tools, equipment and archives - tradespeople, online sellers, event companies, you name it. Flexible monthly terms mean you scale up or down whenever you need to.\n\nBusiness storage from a 20ft container up to 2,700 sq ft of warehouse space in Batley.\n\n📩 mbstorage.co.uk 📞 07375 355233\n\n#BusinessStorage #Batley #WestYorkshire #SmallBusiness"
+    },
+    {
+      "id": "05-security",
+      "date": "2026-08-17",
+      "image": "assets/img/social/05-security.jpg",
+      "caption": "Your stuff, properly looked after. 🔒\n\nEvery MB Storage site has 24/7 motion-sensing CCTV, electric gates and plenty of lighting - and you open the gates from your phone, so you get to your unit whenever suits you. No keypads, no waiting for an office to open.\n\nPeace of mind as standard.\n\n📩 mbstorage.co.uk\n\n#SecureStorage #Batley #Liversedge #SelfStorage"
+    },
+    {
+      "id": "06-sameday",
+      "date": "2026-08-24",
+      "image": "assets/img/social/06-sameday.jpg",
+      "caption": "Need storage TODAY? ⚡\n\nNo problem. In many cases you can book, pay and move in the same day - we'll have your padlock and phone access ready to go.\n\nGet an instant quote and we'll get you sorted 👇\nmbstorage.co.uk\n\n#Storage #SameDay #Batley #WestYorkshire"
+    },
+    {
+      "id": "07-phoneentry",
+      "date": "2026-08-31",
+      "image": "assets/img/social/07-phoneentry.jpg",
+      "caption": "Open the gates with your phone 📱\n\nNo fobs to lose, no keypad codes to forget - just dial from your mobile and the gates open. Drive straight to your unit, any time of day.\n\nLittle touches that make storage actually easy.\n\n📩 mbstorage.co.uk 📞 07375 355233\n\n#Storage #Batley #Liversedge #Brighouse"
+    },
+    {
+      "id": "08-declutter",
+      "date": "2026-09-07",
+      "image": "assets/img/social/08-declutter.jpg",
+      "caption": "Making a bit more room at home? 🏡\n\nSeasonal kit, furniture you're not ready to part with, the kids' old things - a small container is a brilliant way to reclaim your garage, spare room or loft without throwing anything away.\n\nFrom compact 8ft units up to 20ft containers. Instant quote by email 👇\nmbstorage.co.uk\n\n#Declutter #Storage #Batley #WestYorkshire"
+    },
+    {
+      "id": "09-flexible",
+      "date": "2026-09-14",
+      "image": "assets/img/social/09-flexible.jpg",
+      "caption": "Flexible storage, your way. ✅\n\nStay rolling monthly with just 14 days' notice when you're ready to leave - or pay 6 or 12 months upfront and save up to 10%. You're only tied in if you want to be.\n\nStorage that works around you, not the other way round.\n\n📩 mbstorage.co.uk 📞 07375 355233\n\n#Storage #Batley #Liversedge #FlexibleStorage"
+    },
+    {
+      "id": "10-reviews",
+      "date": "2026-09-21",
+      "image": "assets/img/social/10-reviews.jpg",
+      "caption": "Thank you! ⭐⭐⭐⭐⭐\n\nWe're a small family business, so every kind word from our customers means the world to us. Thank you to everyone who's trusted us with their belongings and taken the time to leave a review.\n\nThinking about storage? Come and see why local people rate us.\n\n📩 mbstorage.co.uk 📞 07375 355233\n\n#Storage #Batley #Liversedge #Brighouse #5Stars"
+    },
+    {
+      "id": "11-vehicle",
+      "date": "2026-09-28",
+      "image": "assets/img/social/11-vehicle.jpg",
+      "caption": "Somewhere to keep the motorbike, trailer or car? 🏍️🚗\n\nWe've got secure space for bikes, trailers and small vehicles too - gated, monitored, and easy to access from your phone. Ideal over winter or between projects.\n\nGive us a call and we'll sort the right spot for you.\n\n📞 07375 355233 📩 mbstorage.co.uk\n\n#VehicleStorage #Batley #WestYorkshire"
+    },
+    {
+      "id": "12-local",
+      "date": "2026-10-05",
+      "image": "assets/img/social/12-local.jpg",
+      "caption": "Proud to serve our corner of West Yorkshire 🧡\n\nThree secure sites - Batley, Liversedge and Brighouse - so there's clean, modern, well-priced storage close to home wherever you are in the Spen Valley and beyond.\n\nSupporting a local family business keeps it personal. We'd love to help.\n\n📩 mbstorage.co.uk 📞 07375 355233\n\n#Batley #Liversedge #Brighouse #SpenValley #WestYorkshire #SelfStorage"
+    }
+  ]
+}

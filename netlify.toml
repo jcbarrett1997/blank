@@ -20,3 +20,7 @@
 # Daily 9am UTC: Google review requests ~14 days after move-in
 [functions."review-request"]
   schedule = "0 9 * * *"
+
+# Daily 10am UTC: publish the next scheduled Facebook/Instagram post
+[functions."social-post"]
+  schedule = "0 10 * * *"
