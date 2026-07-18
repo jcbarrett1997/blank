@@ -16,3 +16,7 @@
 # Daily 8am UTC: quote follow-up emails + warm-leads WhatsApp digest
 [functions."quote-followup"]
   schedule = "0 8 * * *"
+
+# Daily 9am UTC: Google review requests ~14 days after move-in
+[functions."review-request"]
+  schedule = "0 9 * * *"

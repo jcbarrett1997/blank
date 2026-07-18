@@ -281,5 +281,20 @@ exports.handler = async function (event) {
     }
   } catch (err) { console.error('Booked marker failed:', err); }
 
+  // Queue a Google review request for ~14 days after move-in (best-effort)
+  try {
+    if (email) {
+      var rblobs = require('./lib/blobs');
+      await rblobs.store('review-log').setJSON('rev-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), {
+        ts: Date.now(),
+        moveIn: m.move_in_date || '',
+        email: String(email).trim(),
+        name: (m.name || 'there').trim(),
+        site: m.site || '',
+        sent: false
+      });
+    }
+  } catch (err) { console.error('Review queue failed:', err); }
+
   return { statusCode: 200, body: 'OK' };
 };
