@@ -108,9 +108,17 @@ function followUpEmail(q, kind) {
 
   var lead, close, subject;
   if (kind === 'window') {
-    subject = 'Your move-in date is almost here - you can book online now';
-    lead = 'When you asked us for a quote for the ' + unitBit + ', you mentioned a move-in date of ' + moveBit + ' - that\'s just around the corner now. Online booking opens 3 days ahead, so you can secure your unit today.';
-    close = 'Any questions before then - sizes, access, what to bring - just reply or give us a call.';
+    var openDate = '';
+    if (q.move_in_date) {
+      var mvd = new Date(q.move_in_date + 'T12:00:00');
+      if (!isNaN(mvd.getTime())) {
+        mvd.setDate(mvd.getDate() - 3);
+        openDate = mvd.toDateString();
+      }
+    }
+    subject = 'Your move-in date is a week away - shall we get you sorted?';
+    lead = 'When you asked us for a quote for the ' + unitBit + ', you mentioned a move-in date of ' + moveBit + ' - that\'s about a week away now. You can arrange everything today by replying to this email or giving us a call' + (openDate ? ', and online booking for your date opens on <strong>' + esc(openDate) + '</strong> (3 days before move-in)' : '') + '.';
+    close = 'Any questions - sizes, access, what to bring - just ask. We\'ll have everything ready for the day.';
   } else if (kind === 'missed') {
     subject = 'Did your plans change? Your MB Storage quote is still valid';
     lead = 'Your planned move-in date (' + moveBit + ') has been and gone, and we didn\'t want to leave you hanging - your quote for the ' + unitBit + ' is still valid. If plans have shifted, no problem at all: reply with a new date and we\'ll sort it.';
@@ -142,7 +150,7 @@ function followUpEmail(q, kind) {
             '<td style="padding:0 10px 0 0"><a href="tel:+447375355233" style="display:inline-block;background:#1E4C6B;color:#ffffff;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:999px;font-size:14px">Call 07375 355233</a></td>' +
             '<td><a href="https://wa.me/447375355233?text=' + encodeURIComponent('Hi MB Storage, I had a quote from you recently and have a question.') + '" style="display:inline-block;background:#25D366;color:#ffffff;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:999px;font-size:14px">WhatsApp us</a></td>' +
           '</tr></table>' +
-          '<p style="margin:18px 0 0;font-size:12px;color:#9a9384;line-height:1.5">Don\'t want reminders about this quote? Just reply and say so - no problem at all.</p>' +
+          '<p style="margin:18px 0 0;font-size:12px;color:#9a9384;line-height:1.5">Don\'t want these reminders? <a href="' + SITE + '/.netlify/functions/quote-followup-stop?e=' + encodeURIComponent(q.email || '') + '" style="color:#5b5648">Stop them with one click</a> - your quote stays valid either way.</p>' +
         '</td></tr>' +
         '<tr><td style="background:#22190A;padding:18px 28px;color:#cfc9bd;font-size:12px">MB Storage &middot; <a href="tel:+447375355233" style="color:#cfc9bd">07375 355233</a> &middot; <a href="mailto:info@mbstorage.co.uk" style="color:#cfc9bd">info@mbstorage.co.uk</a> &middot; <a href="' + SITE + '" style="color:#cfc9bd">mbstorage.co.uk</a></td></tr>' +
       '</table></td></tr></table></div>',
@@ -152,7 +160,8 @@ function followUpEmail(q, kind) {
       (book ? 'Book online: ' + book : null), (book ? '' : null),
       close, '',
       'Call 07375 355233 | WhatsApp: wa.me/447375355233 | reply to this email', '',
-      "Don't want reminders about this quote? Just reply and say so.", '',
+      "Don't want these reminders? Stop them with one click (your quote stays valid): " +
+      SITE + '/.netlify/functions/quote-followup-stop?e=' + encodeURIComponent(q.email || ''), '',
       'Kind regards,', 'MB Storage'
     ].filter(function (l) { return l !== null; }).join('\n')
   };
@@ -188,14 +197,15 @@ exports.handler = async function () {
   var now = Date.now();
   var send = makeSender();
 
-  // Booked emails (with their booking time)
-  var booked = {};
+  // Booked emails (with their booking time) and stop requests
+  var booked = {}, stopped = {};
   for (var i = 0; i < keys.length; i++) {
     if (keys[i].indexOf('booked-') === 0) {
       var bm = await store.get(keys[i], { type: 'json' });
       booked[keys[i].slice(7)] = (bm && bm.ts) || 0;
       if (bm && bm.ts && now - bm.ts > 60 * DAY) await store.delete(keys[i]);
     }
+    if (keys[i].indexOf('stop-') === 0) stopped[keys[i].slice(5)] = true;
   }
 
   var nudged2 = [], nudged7 = [];
@@ -214,8 +224,10 @@ exports.handler = async function () {
       var mv = new Date(q.move_in_date + 'T12:00:00');
       if (!isNaN(mv.getTime())) moveIn = mv.getTime();
     }
-    var planner = moveIn && (moveIn - q.ts) > 5 * DAY;
-    var t1 = planner ? moveIn - 3 * DAY : q.ts + 2 * DAY;   // first nudge
+    // Planner threshold is 9+ days so the week-before nudge always lands
+    // at least a couple of days after the quote itself
+    var planner = moveIn && (moveIn - q.ts) > 9 * DAY;
+    var t1 = planner ? moveIn - 7 * DAY : q.ts + 2 * DAY;   // first nudge
     var t2 = planner ? moveIn + 1 * DAY : q.ts + 7 * DAY;   // final nudge
 
     // Clean up once the whole sequence is well past (whichever is later:
@@ -224,6 +236,9 @@ exports.handler = async function () {
 
     // Booked since quoting? Leave them alone for good.
     if (q.email && booked[q.email] && booked[q.email] >= q.ts) { await store.delete(key); continue; }
+
+    // Asked to stop? Honour it everywhere - emails AND the digest.
+    if (q.email && stopped[q.email]) { await store.delete(key); continue; }
 
     try {
       if (now >= t2 && !q.fu7) {
@@ -242,7 +257,7 @@ exports.handler = async function () {
         }
         q.fu2 = true;
         await store.setJSON(key, q);
-        q._label = planner ? 'Planner - move-in ' + (q.move_in_date || '') + ', booking window now open' : '';
+        q._label = planner ? 'Planner - move-in ' + (q.move_in_date || '') + ' is a week away' : '';
         nudged2.push(q);
       }
     } catch (err) {
