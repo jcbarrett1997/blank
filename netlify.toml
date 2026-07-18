@@ -8,3 +8,7 @@
 # Node 18+ gives the built-in fetch() used by the quote function
 [functions]
   node_bundler = "esbuild"
+
+# Hourly: mark freshly-paid QuickBooks invoices in the Invoice Check sheet
+[functions."qb-paid-sync"]
+  schedule = "0 * * * *"

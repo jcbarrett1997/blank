@@ -16,7 +16,7 @@ exports.handler = async function (event) {
   var state = params.state || '';
   var site = state.split(':')[0];
 
-  if (!code || !realmId || (site !== 'batley' && site !== 'liversedge')) {
+  if (!code || !realmId || (site !== 'batley' && site !== 'liversedge' && site !== 'brighouse')) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'text/html' },
