@@ -103,13 +103,16 @@ async function qbRequest(company, method, path, body) {
   var tok = await getValidTokens(company);
   var sep = path.indexOf('?') === -1 ? '?' : '&';
   var url = API_BASE + '/v3/company/' + tok.realmId + '/' + path + sep + 'minorversion=65';
+  var headers = { Authorization: 'Bearer ' + tok.access_token, Accept: 'application/json' };
+  // Endpoints like invoice/{id}/send take no body. Sending a JSON
+  // Content-Type on a bodyless request is a known trigger for a 500
+  // "SystemFailureError: java.lang.NullPointerException" on Intuit's side
+  // (their handler tries to parse the empty body as JSON), so only set it
+  // when there's actually a body to describe.
+  if (body) headers['Content-Type'] = 'application/json';
   var r = await fetch(url, {
     method: method,
-    headers: {
-      Authorization: 'Bearer ' + tok.access_token,
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
+    headers: headers,
     body: body ? JSON.stringify(body) : undefined
   });
   var json = await r.json().catch(function () { return {}; });
