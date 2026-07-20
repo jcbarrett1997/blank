@@ -67,11 +67,11 @@ function initBookingForm() {
   fetch('/.netlify/functions/availability')
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      if (data && data.configured) { availability = data.availability || {}; updateAvail(); }
+      if (data && data.configured) { availability = data.availability || {}; updateAvail(true); }
     })
     .catch(function () { /* no availability - booking still works */ });
 
-  function updateAvail() {
+  function updateAvail(isInitialLoad) {
     if (!availability || !availHint) return;
     var site = siteSel && siteSel.value;
     var size = sizeSel && sizeSel.value;
@@ -80,6 +80,14 @@ function initBookingForm() {
     if (free === undefined) { availHint.innerHTML = ''; return; }
     if (free <= 0) {
       availHint.innerHTML = '<span class="avail-badge full">⛔ None left to book online at this site - call <a href="tel:+447375355233">07375 355233</a> to join the waiting list.</span>';
+      // Old quote emails link straight here with the form pre-filled, so a
+      // customer following one after that size/site has sold out needs
+      // this to be impossible to miss - not just a small badge under the
+      // form. Only pop it on the initial pre-filled load, not every time
+      // someone manually browses to a sold-out combination.
+      if (isInitialLoad) {
+        alert('Sorry - we\'ve just sold out! This link was for a unit that\'s no longer available.\n\nCall us on 07375 355233 and we\'ll add you to the waiting list.');
+      }
     } else if (free <= 3) {
       availHint.innerHTML = '<span class="avail-badge low">⚠️ Only ' + free + (free === 1 ? ' unit' : ' units') + ' left to book online at this site - book now to secure yours.</span>';
     } else {
