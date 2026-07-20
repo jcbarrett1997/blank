@@ -24,3 +24,7 @@
 # Daily 10am UTC: publish the next scheduled Facebook/Instagram post
 [functions."social-post"]
   schedule = "0 10 * * *"
+
+# Daily 11am UTC: SMS reminder for invoices overdue by REMINDER_DAYS_AFTER_DUE days
+[functions."payment-reminders"]
+  schedule = "0 11 * * *"
