@@ -63,6 +63,16 @@ Sheets phone app). The site shows "Available now" / "Only N left" / "full"
 and blocks bookings for anything at 0. If the sheet is unreachable the site
 fails soft - booking still works, badges just don't show.
 
+## 4. Waiting list (automatic, needs nothing extra configured)
+
+When a quote email finds a size/site sold out, it offers a "Join the
+waiting list" button (`netlify/functions/waitlist.js`, stored in Netlify
+Blobs). Every 2 hours, `waitlist-notify.js` checks the same availability
+sheet above and emails anyone whose size/site has since freed up - each
+person is only ever emailed once. Uses the same email provider config as
+the rest of the site, and reads directly from the availability sheet, so
+there's nothing new to set up as long as section 3 above is done.
+
 ## After adding/changing any variables
 
 Trigger a redeploy (Netlify → Deploys → Trigger deploy) - functions read

@@ -224,6 +224,21 @@ function bookingUrl(d) {
   return SITE + '/book.html?' + q.toString();
 }
 
+/* Link into waitlist.js so a sold-out customer can opt in to be emailed
+   automatically (via waitlist-notify.js) the moment their exact size/site
+   combination frees up. "Either is fine" customers are watched on both
+   sites for that size. */
+function waitlistUrl(d) {
+  var pref = (d.preferred_site || '').toLowerCase();
+  var site = (pref === 'batley' || pref === 'liversedge') ? pref : 'either';
+  var q = new URLSearchParams();
+  q.set('site', site);
+  q.set('size', d.container_size || '');
+  q.set('e', d.email || '');
+  if (d.name) q.set('n', String(d.name).slice(0, 100));
+  return SITE + '/.netlify/functions/waitlist?' + q.toString();
+}
+
 function customerHtml(name, u, incVat, d, state, altSite) {
   var row = function (label, val) {
     return '<tr><td style="padding:6px 0;color:#5b5648;font-size:14px">' + esc(label) +
@@ -304,9 +319,11 @@ function customerHtml(name, u, incVat, d, state, altSite) {
           '<p style="margin:0;font-size:14px;color:#22303a;line-height:1.6">Your preferred move-in date is more than 3 days away, and because availability is limited we only take firm bookings up to <strong>3 days before move-in</strong>. Don\'t worry - <strong>this quote is valid for 30 days</strong>. Reply to this email or call <a href="tel:+447375355233" style="color:#1E4C6B">07375 355233</a> nearer the time and we\'ll get you booked in.</p>' +
         '</div>' : '') +
       (state === 'full' ?
-        '<div style="background:#fdf3e7;border:2px solid #d98324;border-radius:12px;padding:18px 20px;margin-bottom:18px">' +
+        '<div style="background:#fdf3e7;border:2px solid #d98324;border-radius:12px;padding:18px 20px;margin-bottom:18px;text-align:center">' +
           '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#a4560a;font-weight:800">Currently fully booked</p>' +
-          '<p style="margin:0;font-size:14px;color:#22303a;line-height:1.6">This size is in high demand and currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' - but units free up all the time. <strong>Reply to this email or call <a href="tel:+447375355233" style="color:#a4560a">07375 355233</a> to join the waiting list</strong> and we\'ll let you know the moment one becomes available. Your quote is valid for 30 days.</p>' +
+          '<p style="margin:0 0 14px;font-size:14px;color:#22303a;line-height:1.6;text-align:left">This size is in high demand and currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' - but units free up all the time. Your quote is valid for 30 days.</p>' +
+          '<a href="' + esc(waitlistUrl(d)) + '" style="display:inline-block;background:#a4560a;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:999px;font-size:15px">Join the waiting list</a>' +
+          '<p style="margin:12px 0 0;font-size:12px;color:#5b5648;line-height:1.5;text-align:left">We\'ll email you automatically the moment a space frees up - or reply to this email or call <a href="tel:+447375355233" style="color:#a4560a">07375 355233</a> any time.</p>' +
         '</div>' : '') +
       '<table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
         '<td style="padding:0 10px 10px 0"><a href="tel:+447375355233" style="display:inline-block;background:' + (state === 'book' ? '#1E4C6B' : '#00A34A') + ';color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a></td>' +
@@ -372,7 +389,10 @@ function customerText(name, u, incVat, d, state, altSite) {
     (state === 'later' ? '' : null),
     (state === 'full' ? 'CURRENTLY FULLY BOOKED' : null),
     (state === 'full' ? '----------------------------------------' : null),
-    (state === 'full' ? 'This size is in high demand and currently fully booked - but units free up all the time. Reply to this email or call 07375 355233 to join the waiting list and we\'ll let you know the moment one becomes available. Your quote is valid for 30 days.' : null),
+    (state === 'full' ? 'This size is in high demand and currently fully booked - but units free up all the time. Your quote is valid for 30 days.' : null),
+    (state === 'full' ? '' : null),
+    (state === 'full' ? 'Join the waiting list and we\'ll email you automatically the moment a space frees up:' : null),
+    (state === 'full' ? waitlistUrl(d) : null),
     (state === 'full' ? '' : null),
     (state === 'full'
       ? 'Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we\'ll add you to the waiting list.'

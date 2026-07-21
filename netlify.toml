@@ -28,3 +28,7 @@
 # Daily 11am UTC: SMS reminder for invoices overdue by REMINDER_DAYS_AFTER_DUE days
 [functions."payment-reminders"]
   schedule = "0 11 * * *"
+
+# Every 2 hours: email waiting-list customers the moment their size/site frees up
+[functions."waitlist-notify"]
+  schedule = "0 */2 * * *"
