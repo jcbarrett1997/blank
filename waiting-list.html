@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join the Waiting List | MB Storage | Self Storage Batley, West Yorkshire</title>
+<meta name="description" content="Sold out for now? Join the MB Storage waiting list and we'll email you automatically the moment a container frees up at Batley or Liversedge.">
+<link rel="canonical" href="https://www.mbstorage.co.uk/waiting-list.html">
+<link rel="icon" type="image/png" href="assets/img/favicon.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="index.html" aria-label="MB Storage home">
+      <img src="assets/img/logo-landscape.png" srcset="assets/img/logo-landscape@4x.png 4x" alt="MB Storage logo" width="130" height="45">
+    </a>
+    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a href="units.html">Storage Units</a>
+      <a href="locations.html">Locations</a>
+      <a href="about.html">About</a>
+      <a href="site-guidance.html">Site Guidance</a>
+      <a href="faqs.html">FAQs</a>
+      <a href="contact.html">Contact</a>
+      <a class="btn btn-primary" href="quote.html">Get an Instant Quote</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-inner">
+      <p class="eyebrow">Waiting List</p>
+      <h1>Sold out for now? Get first refusal.</h1>
+      <p>Tell us which size and site you're after, and we'll email you automatically the moment a container frees up - no need to keep checking back.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="mt-2" style="max-width:560px;margin-left:auto;margin-right:auto">
+        <form id="waitlist-form" class="form-card" action="/.netlify/functions/waitlist" method="GET">
+          <h2>Join the waiting list</h2>
+          <div class="form-grid mt-1">
+            <div>
+              <label for="w-name">Full name</label>
+              <input id="w-name" type="text" name="n" autocomplete="name">
+            </div>
+            <div>
+              <label for="w-email">Email address *</label>
+              <input id="w-email" type="email" name="e" required autocomplete="email">
+            </div>
+            <div>
+              <label for="w-site">Preferred site *</label>
+              <select id="w-site" name="site" required>
+                <option value="">Choose a site</option>
+                <option value="batley">Batley</option>
+                <option value="liversedge">Liversedge</option>
+                <option value="either">Either is fine</option>
+              </select>
+            </div>
+            <div>
+              <label for="w-size">Container size *</label>
+              <select id="w-size" name="size" required>
+                <option value="">Choose a size</option>
+                <option value="20ft">20ft container</option>
+                <option value="8ft">8ft container (Batley site only)</option>
+              </select>
+            </div>
+            <div class="full">
+              <button type="submit" class="btn btn-primary" style="width:100%">Join the waiting list</button>
+              <p class="hint" style="margin-top:0.75rem">No spam - just the one email when your size and site becomes available.</p>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="container">
+      <h2>Not sure what's available right now?</h2>
+      <p>Get your personalised quote and we'll tell you straight away if there's space to book online today.</p>
+      <a class="btn btn-light" href="quote.html">Get an instant quote</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <img class="footer-logo" src="assets/img/logo-portrait.png" alt="MB Storage">
+        <p>Family-run secure self storage in Batley, Liversedge and <a href="https://www.jbstoragesolutions.co.uk" target="_blank" rel="noopener">Brighouse</a>. Modern units, 24/7 security, and support around the clock.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="units.html">Storage Units</a></li>
+          <li><a href="locations.html">Locations</a></li>
+          <li><a href="faqs.html">FAQs</a></li>
+          <li><a href="who-we-help.html">Who stores with us?</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="site-guidance.html">Site Guidance</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Get Started</h4>
+        <ul>
+          <li><a href="quote.html">Instant Quote</a></li>
+          <li><a href="waiting-list.html">Waiting List</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:+447375355233">07375 355233</a></li>
+          <li><a href="mailto:info@mbstorage.co.uk">info@mbstorage.co.uk</a></li>
+        </ul>
+        <p class="footer-hours">
+          <strong>Office hours</strong>
+          Mon - Fri: 9am - 6pm<br>
+          Weekends: 10am - 6pm
+        </p>
+        <p class="footer-hours-note"><strong>24/7</strong> assistance is available by phone for urgent enquiries.</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 MB Storage. All rights reserved.</p>
+      <p><a href="site-guidance.html">Site Guidance</a> &middot; <a href="privacy-policy.html">Privacy Policy</a> &middot; <a href="terms-and-conditions.html">Terms &amp; Conditions</a></p>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+<script>
+(function () {
+  // 8ft containers only exist at Batley - mirror the quote/booking forms
+  // and physically prevent the Liversedge + 8ft combination here too.
+  var siteSel = document.getElementById('w-site');
+  var sizeSel = document.getElementById('w-size');
+  if (!siteSel || !sizeSel) return;
+  var opt8 = sizeSel.querySelector('option[value="8ft"]');
+  function enforce() {
+    if (!opt8) return;
+    var isLiversedge = siteSel.value === 'liversedge';
+    opt8.disabled = isLiversedge;
+    if (isLiversedge && sizeSel.value === '8ft') sizeSel.value = '';
+  }
+  siteSel.addEventListener('change', enforce);
+  sizeSel.addEventListener('change', enforce);
+  enforce();
+})();
+</script>
+</body>
+</html>
