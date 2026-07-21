@@ -197,6 +197,21 @@ async function bookingState(d) {
   return 'book';
 }
 
+/* When sold out at the customer's specific preferred site, checks whether
+   the OTHER MB Storage site has this size free, so the quote email can
+   offer it as an alternative instead of just saying no. Only meaningful
+   when they named one specific site (not "Either is fine" - if that were
+   full, both sites are already sold out) - and 8ft has no alternate site,
+   since it's Batley-only. */
+async function altSiteWithAvailability(d) {
+  var pref = (d.preferred_site || '').toLowerCase();
+  if (pref !== 'batley' && pref !== 'liversedge') return null;
+  var other = pref === 'batley' ? 'liversedge' : 'batley';
+  var otherFree = await unitsFreeFor({ preferred_site: other, container_size: d.container_size });
+  if (otherFree === null || otherFree <= 0) return null;
+  return other === 'batley' ? 'Batley' : 'Liversedge';
+}
+
 function bookingUrl(d) {
   if (!bookingLive()) return null;
   var q = new URLSearchParams();
@@ -209,7 +224,7 @@ function bookingUrl(d) {
   return SITE + '/book.html?' + q.toString();
 }
 
-function customerHtml(name, u, incVat, d, state) {
+function customerHtml(name, u, incVat, d, state, altSite) {
   var row = function (label, val) {
     return '<tr><td style="padding:6px 0;color:#5b5648;font-size:14px">' + esc(label) +
            '</td><td style="padding:6px 0;color:#22303a;font-size:14px;font-weight:600;text-align:right">' + esc(val) + '</td></tr>';
@@ -243,7 +258,11 @@ function customerHtml(name, u, incVat, d, state) {
     '<tr><td style="height:5px;background:#00A34A"></td></tr>' +
     '<tr><td style="padding:28px">' +
       '<p style="margin:0 0 12px;font-size:16px;color:#22303a">Hi ' + esc(name) + ',</p>' +
-      '<p style="margin:0 0 20px;font-size:15px;color:#5b5648;line-height:1.6">Great news - we have space ready for you. Here is your personalised quote, straight away and with no obligation.</p>' +
+      '<p style="margin:0 0 20px;font-size:15px;color:#5b5648;line-height:1.6">' + (state === 'full'
+        ? (altSite
+            ? 'This size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' - but we do have availability at ' + esc(altSite) + ' if you\'d like to consider that instead. Here is your personalised quote below.'
+            : 'Thanks for getting in touch - this size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ', but here is your personalised quote below so you\'re all set the moment a space frees up (and units do free up regularly).')
+        : 'Great news - we have space ready for you. Here is your personalised quote, straight away and with no obligation.') + '</p>' +
       '<div style="background:#f7f6f3;border:1px solid #e4e1da;border-radius:12px;padding:18px 20px;margin-bottom:20px">' +
         '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#008a3f;font-weight:700">Your quote</p>' +
         '<p style="margin:0 0 2px;font-size:18px;font-weight:800;color:#1E4C6B">' + esc(u.label) + '</p>' +
@@ -303,7 +322,7 @@ function customerHtml(name, u, incVat, d, state) {
   '</table></td></tr></table></div>';
 }
 
-function customerText(name, u, incVat, d, state) {
+function customerText(name, u, incVat, d, state, altSite) {
   var offers = prepayOffers(u);
   var offerLines = [];
   offers.forEach(function (o) {
@@ -312,7 +331,11 @@ function customerText(name, u, incVat, d, state) {
 
   var lines = [
     'Hi ' + name + ',', '',
-    'Great news - we have space ready for you. Here is your personalised quote, straight away and with no obligation.', '',
+    (state === 'full'
+      ? (altSite
+          ? 'This size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + d.preferred_site : '') + ' - but we do have availability at ' + altSite + ' if you\'d like to consider that instead. Here is your personalised quote below.'
+          : 'Thanks for getting in touch - this size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + d.preferred_site : '') + ', but here is your personalised quote below so you\'re all set the moment a space frees up (and units do free up regularly).')
+      : 'Great news - we have space ready for you. Here is your personalised quote, straight away and with no obligation.'), '',
     'YOUR QUOTE', '----------------------------------------',
     'Unit: ' + u.label,
     'Size: ' + u.sqft + ' of floor space',
@@ -410,6 +433,7 @@ exports.handler = async function (event) {
 
   var state = await bookingState(d);
   console.log('Quote email booking panel state:', state);
+  var altSite = state === 'full' ? await altSiteWithAvailability(d) : null;
 
   var send = makeSender();
 
@@ -418,8 +442,8 @@ exports.handler = async function (event) {
     await send({
       from: FROM, to: [d.email], reply_to: TO,
       subject: 'Your MB Storage quote - save up to 10% paying upfront',
-      html: customerHtml(name, u, incVat, d, state),
-      text: customerText(name, u, incVat, d, state)
+      html: customerHtml(name, u, incVat, d, state, altSite),
+      text: customerText(name, u, incVat, d, state, altSite)
     });
     // 2) Internal notification
     await send({
