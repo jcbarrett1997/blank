@@ -9,7 +9,34 @@
  *   Mailgun: MAILGUN_API_KEY, MAILGUN_DOMAIN, MAILGUN_API_BASE (optional)
  *   Resend:  RESEND_API_KEY
  *   Shared:  MAIL_FROM, MAIL_TO, SITE_URL
+ *
+ * Spam protection: Cloudflare Turnstile (free). The widget on the page sets
+ * a cf-turnstile-response field, which is checked against Cloudflare here -
+ * see SETUP-CAPTCHA.md for how to get TURNSTILE_SECRET_KEY. If it's not set,
+ * this check is skipped (fails soft) rather than breaking the form.
  */
+
+async function verifyTurnstile(token, ip) {
+  var secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return true; // not configured yet - don't block real customers
+  if (!token) return false;
+  try {
+    var form = new URLSearchParams();
+    form.append('secret', secret);
+    form.append('response', token);
+    if (ip) form.append('remoteip', ip);
+    var r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString()
+    });
+    var json = await r.json().catch(function () { return {}; });
+    return !!json.success;
+  } catch (e) {
+    console.error('Turnstile verification failed:', e);
+    return false;
+  }
+}
 
 var FROM = process.env.MAIL_FROM || 'MB Storage <quotes@mbstorage.co.uk>';
 var TO   = process.env.MAIL_TO   || 'info@mbstorage.co.uk';
@@ -106,6 +133,9 @@ exports.handler = async function (event) {
   var fail = function (code, msg) { return wantsJson ? json(code, { ok: false, error: msg }) : redirect(); };
 
   if (d._honey || d.company) return wantsJson ? json(200, { ok: true }) : redirect();
+  var clientIp = event.headers['x-nf-client-connection-ip'] || event.headers['client-ip'];
+  var human = await verifyTurnstile(d['cf-turnstile-response'], clientIp);
+  if (!human) return fail(400, 'Please try again - our spam check didn\'t recognise that submission.');
   if (!d.email || String(d.email).indexOf('@') === -1) return fail(400, 'A valid email is required.');
   if (!d.phone || !String(d.phone).trim()) return fail(400, 'A phone number is required.');
   if (!d.message || !String(d.message).trim()) return fail(400, 'Please enter a message.');

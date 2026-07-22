@@ -8,6 +8,7 @@
 <link rel="canonical" href="https://www.mbstorage.co.uk/contact.html">
 <link rel="icon" type="image/png" href="assets/img/favicon.png">
 <link rel="stylesheet" href="assets/css/style.css">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -94,6 +95,9 @@
             <div class="full">
               <label for="c-message">Your message *</label>
               <textarea id="c-message" name="message" rows="5" required></textarea>
+            </div>
+            <div class="full">
+              <div class="cf-turnstile" data-sitekey="TURNSTILE_SITE_KEY"></div>
             </div>
             <div class="full">
               <button type="submit" class="btn btn-primary" style="width:100%">Send message</button>
