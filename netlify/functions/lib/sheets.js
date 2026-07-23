@@ -15,7 +15,11 @@ async function appendRow(row) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ secret: process.env.WAITLIST_SHEET_SECRET || '', row: row })
     });
-    if (!r.ok) { console.error('Sheet webhook error:', r.status, await r.text()); return false; }
+    var text = await r.text();
+    // Apps Script web apps always return HTTP 200, even for a rejected
+    // ('forbidden') request - the actual result is in the body, so check
+    // that too or a wrong secret silently looks like success.
+    if (!r.ok || text.trim() !== 'ok') { console.error('Sheet webhook error:', r.status, text); return false; }
     return true;
   } catch (e) {
     console.error('Sheet webhook failed:', e);
