@@ -37,3 +37,9 @@
 # batches - see review-campaign-batley.js. Safe to delete both once done.
 [functions."review-campaign-batley"]
   schedule = "30 9 * * *"
+
+# Daily 9:35am UTC: one-off Liversedge Google review campaign, 23-24 Jul
+# 2026 batches - see review-campaign-liversedge.js. Safe to delete both
+# once done.
+[functions."review-campaign-liversedge"]
+  schedule = "35 9 * * *"
