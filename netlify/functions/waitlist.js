@@ -53,13 +53,20 @@ exports.handler = async function (event) {
   var what = SIZE_LABELS[size] + ' at ' + SITE_LABELS[site];
 
   if (params.confirm !== '1') {
-    var confirmUrl = '?site=' + encodeURIComponent(site) + '&size=' + encodeURIComponent(size) +
-      '&e=' + encodeURIComponent(email) + '&n=' + encodeURIComponent(name) +
-      '&p=' + encodeURIComponent(phone) + '&confirm=1';
     return page('Join the waiting list?',
       '<h2 style="color:#1E4C6B">Join the waiting list?</h2>' +
       '<p style="color:#5b5648;line-height:1.6">We\'ll email <strong>' + esc(email) + '</strong> the moment a ' + esc(what) + ' becomes available. No spam - just the one email when it\'s ready.</p>' +
-      '<a href="' + confirmUrl + '" style="display:inline-block;margin-top:12px;background:#00A34A;color:#fff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:999px;font-size:15px">Yes - add me to the waiting list</a>');
+      '<form method="GET" style="margin-top:16px;text-align:left">' +
+        '<input type="hidden" name="site" value="' + esc(site) + '">' +
+        '<input type="hidden" name="size" value="' + esc(size) + '">' +
+        '<input type="hidden" name="e" value="' + esc(email) + '">' +
+        '<input type="hidden" name="n" value="' + esc(name) + '">' +
+        '<input type="hidden" name="confirm" value="1">' +
+        '<label for="wl-phone" style="display:block;font-size:13px;font-weight:600;color:#22303a;margin-bottom:6px">Best phone number to reach you on</label>' +
+        '<input id="wl-phone" type="tel" name="p" value="' + esc(phone) + '" required placeholder="07xxx xxxxxx" ' +
+          'style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #d8d3c8;border-radius:8px;font-size:15px;margin-bottom:14px">' +
+        '<button type="submit" style="display:inline-block;background:#00A34A;color:#fff;border:none;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:999px;font-size:15px;cursor:pointer">Yes - add me to the waiting list</button>' +
+      '</form>');
   }
 
   try {
