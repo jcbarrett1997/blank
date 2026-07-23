@@ -52,9 +52,11 @@ exports.handler = async function (event) {
 
   var what = SIZE_LABELS[size] + ' at ' + SITE_LABELS[site];
 
-  if (params.confirm !== '1') {
+  var missingPhone = params.confirm === '1' && !phone;
+  if (params.confirm !== '1' || missingPhone) {
     return page('Join the waiting list?',
       '<h2 style="color:#1E4C6B">Join the waiting list?</h2>' +
+      (missingPhone ? '<p style="color:#b3261e;font-weight:600;margin:0 0 10px">Please add a phone number to continue.</p>' : '') +
       '<p style="color:#5b5648;line-height:1.6">We\'ll email <strong>' + esc(email) + '</strong> the moment a ' + esc(what) + ' becomes available. No spam - just the one email when it\'s ready.</p>' +
       '<form method="GET" style="margin-top:16px;text-align:left">' +
         '<input type="hidden" name="site" value="' + esc(site) + '">' +
@@ -62,8 +64,8 @@ exports.handler = async function (event) {
         '<input type="hidden" name="e" value="' + esc(email) + '">' +
         '<input type="hidden" name="n" value="' + esc(name) + '">' +
         '<input type="hidden" name="confirm" value="1">' +
-        '<label for="wl-phone" style="display:block;font-size:13px;font-weight:600;color:#22303a;margin-bottom:6px">Phone number (optional)</label>' +
-        '<input id="wl-phone" type="tel" name="p" value="' + esc(phone) + '" placeholder="07xxx xxxxxx" ' +
+        '<label for="wl-phone" style="display:block;font-size:13px;font-weight:600;color:#22303a;margin-bottom:6px">Phone number *</label>' +
+        '<input id="wl-phone" type="tel" name="p" value="' + esc(phone) + '" required placeholder="07xxx xxxxxx" ' +
           'style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #d8d3c8;border-radius:8px;font-size:15px;margin-bottom:6px">' +
         '<p style="margin:0 0 14px;font-size:12px;color:#9a9384">In case it\'s quicker for us to call you when a space frees up.</p>' +
         '<button type="submit" style="display:inline-block;background:#00A34A;color:#fff;border:none;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:999px;font-size:15px;cursor:pointer">Yes - add me to the waiting list</button>' +
