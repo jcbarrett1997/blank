@@ -62,9 +62,10 @@ exports.handler = async function (event) {
         '<input type="hidden" name="e" value="' + esc(email) + '">' +
         '<input type="hidden" name="n" value="' + esc(name) + '">' +
         '<input type="hidden" name="confirm" value="1">' +
-        '<label for="wl-phone" style="display:block;font-size:13px;font-weight:600;color:#22303a;margin-bottom:6px">Best phone number to reach you on</label>' +
-        '<input id="wl-phone" type="tel" name="p" value="' + esc(phone) + '" required placeholder="07xxx xxxxxx" ' +
-          'style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #d8d3c8;border-radius:8px;font-size:15px;margin-bottom:14px">' +
+        '<label for="wl-phone" style="display:block;font-size:13px;font-weight:600;color:#22303a;margin-bottom:6px">Phone number (optional)</label>' +
+        '<input id="wl-phone" type="tel" name="p" value="' + esc(phone) + '" placeholder="07xxx xxxxxx" ' +
+          'style="width:100%;box-sizing:border-box;padding:11px 14px;border:1px solid #d8d3c8;border-radius:8px;font-size:15px;margin-bottom:6px">' +
+        '<p style="margin:0 0 14px;font-size:12px;color:#9a9384">In case it\'s quicker for us to call you when a space frees up.</p>' +
         '<button type="submit" style="display:inline-block;background:#00A34A;color:#fff;border:none;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:999px;font-size:15px;cursor:pointer">Yes - add me to the waiting list</button>' +
       '</form>');
   }
