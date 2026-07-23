@@ -203,10 +203,23 @@ function todayInLondon() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
 }
 
-exports.handler = async function () {
+exports.handler = async function (event) {
   if (!process.env.RESEND_API_KEY && !process.env.MAILGUN_API_KEY) {
     return { statusCode: 200, body: 'email not configured' };
   }
+
+  // Test mode: ?test=you@example.com sends a single sample email to that
+  // address only - doesn't touch the real batches or the Blobs log, so it
+  // can be run as many times as needed without affecting the real send.
+  var testTo = event && event.queryStringParameters && event.queryStringParameters.test;
+  if (testTo) {
+    var send0 = makeSender();
+    var msg0 = reviewEmail('there');
+    msg0.subject = '[TEST] ' + msg0.subject;
+    await send0({ from: FROM, to: [testTo], reply_to: TO, subject: msg0.subject, html: msg0.html, text: msg0.text });
+    return { statusCode: 200, body: 'test email sent to ' + testTo };
+  }
+
   var today = todayInLondon();
   var store = blobs.store('review-campaign-batley-log');
   var send = makeSender();
