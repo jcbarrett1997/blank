@@ -9,6 +9,7 @@
  */
 
 var blobs = require('./lib/blobs');
+var sheets = require('./lib/sheets');
 
 function esc(s) {
   return String(s == null ? '' : s)
@@ -63,9 +64,14 @@ exports.handler = async function (event) {
 
   try {
     var key = 'w-' + site + '-' + size + '-' + email;
+    var addedAt = Date.now();
     await blobs.store('waitlist-log').setJSON(key, {
-      name: name || 'there', email: email, phone: phone, site: site, size: size, addedAt: Date.now(), notified: false
+      name: name || 'there', email: email, phone: phone, site: site, size: size, addedAt: addedAt, notified: false
     });
+    await sheets.appendRow([
+      name || 'there', email, phone, SIZE_LABELS[size], SITE_LABELS[site],
+      new Date(addedAt).toLocaleString('en-GB', { timeZone: 'Europe/London' }), 'waiting'
+    ]);
   } catch (err) {
     console.error('Waitlist signup failed:', err);
     return page('Sorry - that didn\'t work', '<h2 style="color:#1E4C6B">Sorry - that didn\'t work</h2><p style="color:#5b5648">Please try again in a minute, or just reply to your quote email and we\'ll add you by hand.</p>');
