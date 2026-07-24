@@ -39,6 +39,19 @@ function clampBookingDate(input) {
   input.max = fmt(max);
 }
 
+/* Quote form's move-in date has no upper bound (people plan ahead), but a
+   past date makes no sense and used to slip through silently - the sold-
+   out/booking-window logic only checked whether a date was far in the
+   future, so a past date was treated the same as "no date given" and
+   still got a cheerful "book now" response. */
+function clampMinDate(input) {
+  if (!input) return;
+  var fmt = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  input.min = fmt(new Date());
+}
+
 function initBookingForm() {
   var form = document.getElementById('book-form');
   if (!form) return;
@@ -263,6 +276,8 @@ function initQuoteForm() {
   if (!form) return;
   var status = document.getElementById('quote-status');
   var btn = form.querySelector('button[type="submit"]');
+
+  clampMinDate(document.getElementById('q-date'));
 
   /* 8ft containers only exist at Batley - mirror the booking form and
      physically prevent the Liversedge + 8ft combination here too. */

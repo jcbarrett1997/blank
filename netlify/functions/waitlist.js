@@ -81,6 +81,9 @@ exports.handler = async function (event) {
   if (!SITE_LABELS[site] || !SIZE_LABELS[size]) {
     return page('Waiting list', '<h2 style="color:#1E4C6B">Something\'s missing</h2><p style="color:#5b5648">This link doesn\'t say which size or site you\'re after. Please use the link from your quote email, or the <a href="/waiting-list.html">waiting list page</a>.</p>');
   }
+  if (size === '8ft' && site === 'liversedge') {
+    return page('Waiting list', '<h2 style="color:#1E4C6B">Something\'s missing</h2><p style="color:#5b5648">8ft containers are only ever available at our Batley site, so this combination will never free up. Please use the <a href="/waiting-list.html">waiting list page</a> to sign up for Batley instead.</p>');
+  }
   if (!phone) {
     return page('Waiting list', '<h2 style="color:#1E4C6B">Something\'s missing</h2><p style="color:#5b5648">This link doesn\'t include a phone number. Please use the <a href="/waiting-list.html">waiting list page</a> to sign up, or contact us and we\'ll add you by hand.</p>');
   }
