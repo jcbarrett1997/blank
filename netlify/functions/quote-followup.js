@@ -81,6 +81,49 @@ function bookingUrl(q) {
   return SITE + '/book.html?' + p.toString();
 }
 
+/* How many units of this quote's size are free at its site(s), from the
+   optional availability sheet. Returns null when unknown (sheet unset/
+   unreachable) - fail soft. Mirrors quote.js's own check, so a follow-up
+   nudge never invites someone to "book online now" when that size/site
+   has actually sold out since the quote was sent. */
+async function unitsFreeFor(q) {
+  var url = process.env.AVAILABILITY_SHEET_CSV_URL;
+  if (!url) return null;
+  try {
+    var r = await fetch(url, { redirect: 'follow' });
+    if (!r.ok) return null;
+    var rows = (await r.text()).split(/\r?\n/).map(function (l) {
+      return l.split(',').map(function (c) { return c.replace(/^"|"$/g, '').trim().toLowerCase(); });
+    });
+    var head = rows[0], iSite = head.indexOf('site'), iSize = head.indexOf('size'), iFree = head.indexOf('units_free');
+    if (iSite === -1 || iSize === -1 || iFree === -1) return null;
+    var size = (q.size || '').toLowerCase();
+    var pref = (q.site || '').toLowerCase();
+    var sites = (pref === 'batley' || pref === 'liversedge') ? [pref]
+              : (size === '8ft' ? ['batley'] : ['batley', 'liversedge']);
+    var total = 0, found = false;
+    rows.slice(1).forEach(function (row) {
+      if (row[iSize] !== size || sites.indexOf(row[iSite]) === -1) return;
+      var n = parseInt(row[iFree], 10);
+      if (!isNaN(n)) { total += Math.max(0, n); found = true; }
+    });
+    return found ? total : null;
+  } catch (e) { console.error(e); return null; }
+}
+
+/* Link into waitlist.js, same as quote.js's sold-out panel. */
+function waitlistUrl(q) {
+  var pref = (q.site || '').toLowerCase();
+  var site = (pref === 'batley' || pref === 'liversedge') ? pref : 'either';
+  var p = new URLSearchParams();
+  p.set('site', site);
+  p.set('size', q.size || '');
+  p.set('e', q.email || '');
+  if (q.name) p.set('n', String(q.name).slice(0, 100));
+  if (q.phone) p.set('p', String(q.phone).slice(0, 30));
+  return SITE + '/.netlify/functions/waitlist?' + p.toString();
+}
+
 /* "07123 456789" / "+44 7123..." -> "447123456789" for wa.me links */
 function waPhone(p) {
   var digits = String(p || '').replace(/\D/g, '');
@@ -98,11 +141,13 @@ function firstName(name) {
 /* kind: 'checkin' (day 2), 'final' (day 7),
          'window' (3 days before a planned move-in - booking now open),
          'missed' (planned move-in date passed without booking) */
-function followUpEmail(q, kind) {
-  var book = bookingUrl(q);
+function followUpEmail(q, kind, soldOut) {
+  var book = soldOut ? null : bookingUrl(q);
   var btn = book
     ? '<div style="text-align:center;margin:18px 0"><a href="' + book + '" style="display:inline-block;background:#00A34A;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:999px;font-size:15px">Book online now</a></div>'
-    : '';
+    : (soldOut
+      ? '<div style="text-align:center;margin:18px 0"><a href="' + waitlistUrl(q) + '" style="display:inline-block;background:#a4560a;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:999px;font-size:15px">Join the waiting list</a></div>'
+      : '');
   var unitBit = '<strong>' + esc(q.sizeLabel || q.size + ' container') + '</strong>';
   var moveBit = q.move_in_date ? '<strong>' + esc(q.move_in_date) + '</strong>' : 'your planned date';
 
@@ -133,6 +178,10 @@ function followUpEmail(q, kind) {
     close = 'Reply to this email with any questions at all - sizes, access, moving in - we\'re happy to help.';
   }
 
+  if (soldOut) {
+    close = 'This size is fully booked' + (q.site && q.site.toLowerCase() !== 'either is fine' ? ' at ' + esc(q.site) : '') + ' right now, but units free up all the time - join the waiting list above and we\'ll email you the moment one does.';
+  }
+
   return {
     subject: subject,
     html:
@@ -158,6 +207,7 @@ function followUpEmail(q, kind) {
       'Hi ' + firstName(q.name) + ',', '',
       lead.replace(/<[^>]+>/g, ''), '',
       (book ? 'Book online: ' + book : null), (book ? '' : null),
+      (soldOut ? 'Join the waiting list: ' + waitlistUrl(q) : null), (soldOut ? '' : null),
       close, '',
       'Call 07375 355233 | WhatsApp: wa.me/447375355233 | reply to this email', '',
       "Don't want these reminders? Stop them with one click (your quote stays valid): " +
@@ -243,7 +293,8 @@ exports.handler = async function () {
     try {
       if (now >= t2 && !q.fu7) {
         if (q.email) {
-          var e7 = followUpEmail(q, planner ? 'missed' : 'final');
+          var free7 = await unitsFreeFor(q);
+          var e7 = followUpEmail(q, planner ? 'missed' : 'final', free7 !== null && free7 <= 0);
           await send({ from: FROM, to: [q.email], reply_to: TO, subject: e7.subject, html: e7.html, text: e7.text });
         }
         q.fu7 = true; q.fu2 = true;
@@ -252,7 +303,8 @@ exports.handler = async function () {
         nudged7.push(q);
       } else if (now >= t1 && !q.fu2) {
         if (q.email) {
-          var e2 = followUpEmail(q, planner ? 'window' : 'checkin');
+          var free2 = await unitsFreeFor(q);
+          var e2 = followUpEmail(q, planner ? 'window' : 'checkin', free2 !== null && free2 <= 0);
           await send({ from: FROM, to: [q.email], reply_to: TO, subject: e2.subject, html: e2.html, text: e2.text });
         }
         q.fu2 = true;
