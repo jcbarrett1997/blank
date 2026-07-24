@@ -163,7 +163,8 @@ function followUpEmail(q, kind, soldOut) {
       }
     }
     subject = 'Your move-in date is a week away - shall we get you sorted?';
-    lead = 'When you asked us for a quote for the ' + unitBit + ', you mentioned a move-in date of ' + moveBit + ' - that\'s about a week away now. You can arrange everything today by replying to this email or giving us a call' + (openDate ? ', and online booking for your date opens on <strong>' + esc(openDate) + '</strong> (3 days before move-in)' : '') + '.';
+    lead = 'When you asked us for a quote for the ' + unitBit + ', you mentioned a move-in date of ' + moveBit + ' - that\'s about a week away now. You can arrange everything today by replying to this email or giving us a call' +
+      (soldOut ? '' : (openDate ? ', and online booking for your date opens on <strong>' + esc(openDate) + '</strong> (3 days before move-in)' : '')) + '.';
     close = 'Any questions - sizes, access, what to bring - just ask. We\'ll have everything ready for the day.';
   } else if (kind === 'missed') {
     subject = 'Did your plans change? Your MB Storage quote is still valid';
