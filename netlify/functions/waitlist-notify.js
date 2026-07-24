@@ -18,6 +18,27 @@ var SITE = (process.env.SITE_URL || 'https://www.mbstorage.co.uk').replace(/\/$/
 var SITE_LABELS = { batley: 'Batley', liversedge: 'Liversedge' };
 var SIZE_LABELS = { '20ft': '20ft container', '8ft': '8ft container' };
 
+function bookingLive() {
+  var v = String(process.env.BOOKING_LIVE || '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+  return v === 'true' || v === 'yes' || v === '1' || v === 'on';
+}
+
+/* Same self-service booking link the quote/follow-up emails use - this is
+   the most time-critical moment of all (first come, first served), so it
+   should never be phone-only just because it's a different email. Site is
+   only pre-filled when exactly one of the customer's watched sites has
+   freed up; with both, book.html's dropdown lets them pick. */
+function bookingUrl(entry, availableAt) {
+  if (!bookingLive()) return null;
+  var p = new URLSearchParams();
+  p.set('size', entry.size || '');
+  if (availableAt.length === 1) p.set('site', availableAt[0]);
+  if (entry.name) p.set('name', entry.name);
+  if (entry.email) p.set('email', entry.email);
+  if (entry.phone) p.set('phone', entry.phone);
+  return SITE + '/book.html?' + p.toString();
+}
+
 function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -114,6 +135,7 @@ exports.handler = async function () {
 
     var what = SIZE_LABELS[entry.size] || entry.size;
     var whereText = availableAt.map(function (s) { return SITE_LABELS[s] || s; }).join(' or ');
+    var book = bookingUrl(entry, availableAt);
 
     try {
       await send({
@@ -123,12 +145,14 @@ exports.handler = async function () {
           '<div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e4e1da;border-radius:14px;padding:28px">' +
           '<h2 style="margin:0 0 12px;color:#008a3f">Good news, ' + esc(entry.name || 'there') + '!</h2>' +
           '<p style="margin:0 0 14px;color:#22303a;font-size:15px;line-height:1.6">A <strong>' + esc(what) + '</strong> has just become available at <strong>' + esc(whereText) + '</strong> - you asked us to let you know.</p>' +
-          '<p style="margin:0 0 18px;color:#5b5648;font-size:14px;line-height:1.6">Spaces like this go quickly, so get in touch as soon as you can and we\'ll get you booked in.</p>' +
-          '<a href="tel:+447375355233" style="display:inline-block;background:#00A34A;color:#fff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:999px;font-size:15px">Call 07375 355233</a>' +
+          '<p style="margin:0 0 18px;color:#5b5648;font-size:14px;line-height:1.6">Spaces like this go quickly' + (book ? ', so secure yours right now' : ', so get in touch as soon as you can') + ' and we\'ll get you booked in.</p>' +
+          (book ? '<a href="' + book + '" style="display:inline-block;background:#00A34A;color:#fff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:999px;font-size:15px;margin-bottom:10px">Book online now</a><br>' : '') +
+          '<a href="tel:+447375355233" style="display:inline-block;background:' + (book ? '#1E4C6B' : '#00A34A') + ';color:#fff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:999px;font-size:15px">Call 07375 355233</a>' +
           '<p style="margin:16px 0 0;font-size:12px;color:#5b5648">Or just reply to this email and we\'ll take it from there.</p>' +
           '</div></div>',
         text: 'Good news, ' + (entry.name || 'there') + '!\n\n' +
           'A ' + what + ' has just become available at ' + whereText + ' - you asked us to let you know.\n\n' +
+          (book ? 'Book online now: ' + book + '\n\n' : '') +
           'Spaces like this go quickly - call 07375 355233 or reply to this email and we\'ll get you booked in.\n\n' +
           'MB Storage | ' + SITE
       });

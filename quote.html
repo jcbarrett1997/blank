@@ -202,11 +202,18 @@
 
 <script src="assets/js/main.js"></script>
 <script>
-// Pre-select container size when arriving via ?size=20ft / ?size=8ft
+// Pre-select container size / site when arriving via ?size=20ft / ?site=Batley
 (function () {
-  var size = new URLSearchParams(window.location.search).get('size');
-  var sel = document.getElementById('q-size');
-  if (size && sel && sel.querySelector('option[value="' + size + '"]')) sel.value = size;
+  var params = new URLSearchParams(window.location.search);
+  var size = params.get('size');
+  var sizeSel = document.getElementById('q-size');
+  if (size && sizeSel && sizeSel.querySelector('option[value="' + size + '"]')) sizeSel.value = size;
+  var site = params.get('site');
+  var siteSel = document.getElementById('q-site');
+  if (site && siteSel) {
+    var match = Array.prototype.find.call(siteSel.options, function (o) { return o.value === site; });
+    if (match) siteSel.value = site;
+  }
 })();
 </script>
 </body>

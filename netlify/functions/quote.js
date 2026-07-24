@@ -180,20 +180,31 @@ async function unitsFreeFor(d) {
 }
 
 /* Which booking panel the quote email should show:
-   'book'  - bookable now, show the Book online button
-   'later' - their move-in date is beyond the 3-day booking window
-   'full'  - their size is sold out at their preferred site(s)
-   'off'   - online booking not enabled */
+   'book'       - bookable now, show the Book online button
+   'later'      - move-in date is beyond the 3-day booking window, and
+                   this size currently has availability
+   'later-full' - move-in date is beyond the window AND this size is
+                   ALSO sold out right now - both facts matter (the date
+                   check used to short-circuit before availability was
+                   even checked, silently hiding a genuine sell-out), so
+                   this state tells them both and still offers the
+                   waiting list
+   'full'       - their size is sold out at their preferred site(s)
+   'off'        - online booking not enabled */
 async function bookingState(d) {
   if (!bookingUrl(d)) return 'off';
+  var later = false;
   if (d.move_in_date) {
     var picked = new Date(d.move_in_date + 'T12:00:00');
     var latest = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     latest.setHours(23, 59, 59, 999);
-    if (!isNaN(picked.getTime()) && picked > latest) return 'later';
+    if (!isNaN(picked.getTime()) && picked > latest) later = true;
   }
   var free = await unitsFreeFor(d);
-  if (free !== null && free <= 0) return 'full';
+  var full = free !== null && free <= 0;
+  if (later && full) return 'later-full';
+  if (later) return 'later';
+  if (full) return 'full';
   return 'book';
 }
 
@@ -221,6 +232,7 @@ function bookingUrl(d) {
   if (d.name) q.set('name', String(d.name).slice(0, 100));
   if (d.email) q.set('email', String(d.email).slice(0, 100));
   if (d.phone) q.set('phone', String(d.phone).slice(0, 30));
+  if (d.move_in_date) q.set('move_in_date', String(d.move_in_date).slice(0, 20));
   return SITE + '/book.html?' + q.toString();
 }
 
@@ -238,6 +250,16 @@ function waitlistUrl(d) {
   if (d.name) q.set('n', String(d.name).slice(0, 100));
   if (d.phone) q.set('p', String(d.phone).slice(0, 30));
   return SITE + '/.netlify/functions/waitlist?' + q.toString();
+}
+
+/* Pre-filled link to get an actual quote for the alternative site, so a
+   "we do have space at Liversedge instead" mention is something the
+   customer can act on with one click, not just a line of text. */
+function altSiteQuoteUrl(d, altSite) {
+  var q = new URLSearchParams();
+  q.set('size', d.container_size || '');
+  q.set('site', altSite);
+  return SITE + '/quote.html?' + q.toString();
 }
 
 function customerHtml(name, u, incVat, d, state, altSite) {
@@ -274,7 +296,7 @@ function customerHtml(name, u, incVat, d, state, altSite) {
     '<tr><td style="height:5px;background:#00A34A"></td></tr>' +
     '<tr><td style="padding:28px">' +
       '<p style="margin:0 0 12px;font-size:16px;color:#22303a">Hi ' + esc(name) + ',</p>' +
-      '<p style="margin:0 0 20px;font-size:15px;color:#5b5648;line-height:1.6">' + (state === 'full'
+      '<p style="margin:0 0 20px;font-size:15px;color:#5b5648;line-height:1.6">' + ((state === 'full' || state === 'later-full')
         ? (altSite
             ? 'This size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' - but we do have availability at ' + esc(altSite) + ' if you\'d like to consider that instead. Here is your personalised quote below.'
             : 'Thanks for getting in touch - this size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ', but here is your personalised quote below so you\'re all set the moment a space frees up (and units do free up regularly).')
@@ -319,18 +341,21 @@ function customerHtml(name, u, incVat, d, state, altSite) {
           '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#1E4C6B;font-weight:800">Planning ahead?</p>' +
           '<p style="margin:0;font-size:14px;color:#22303a;line-height:1.6">Your preferred move-in date is more than 3 days away, and because availability is limited we only take firm bookings up to <strong>3 days before move-in</strong>. Don\'t worry - <strong>this quote is valid for 30 days</strong>. Reply to this email or call <a href="tel:+447375355233" style="color:#1E4C6B">07375 355233</a> nearer the time and we\'ll get you booked in.</p>' +
         '</div>' : '') +
-      (state === 'full' ?
+      ((state === 'full' || state === 'later-full') ?
         '<div style="background:#fdf3e7;border:2px solid #d98324;border-radius:12px;padding:18px 20px;margin-bottom:18px;text-align:center">' +
           '<p style="margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#a4560a;font-weight:800">Currently fully booked</p>' +
-          '<p style="margin:0 0 14px;font-size:14px;color:#22303a;line-height:1.6;text-align:left">This size is in high demand and currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' - but units free up all the time. Your quote is valid for 30 days.</p>' +
+          '<p style="margin:0 0 14px;font-size:14px;color:#22303a;line-height:1.6;text-align:left">' + (state === 'later-full'
+            ? 'Your preferred move-in date is more than 3 days away, and this size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' too - but units free up all the time, and online booking opens again 3 days before move-in. Your quote is valid for 30 days.'
+            : 'This size is in high demand and currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + esc(d.preferred_site) : '') + ' - but units free up all the time. Your quote is valid for 30 days.') + '</p>' +
           '<a href="' + esc(waitlistUrl(d)) + '" style="display:inline-block;background:#a4560a;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:999px;font-size:15px">Join the waiting list</a>' +
+          (altSite ? '<a href="' + esc(altSiteQuoteUrl(d, altSite)) + '" style="display:inline-block;margin-left:8px;background:#ffffff;color:#a4560a;border:2px solid #a4560a;text-decoration:none;font-weight:700;padding:10px 22px;border-radius:999px;font-size:14px">Get a ' + esc(altSite) + ' quote instead</a>' : '') +
           '<p style="margin:12px 0 0;font-size:12px;color:#5b5648;line-height:1.5;text-align:left">We\'ll email you automatically the moment a space frees up - or reply to this email or call <a href="tel:+447375355233" style="color:#a4560a">07375 355233</a> any time.</p>' +
         '</div>' : '') +
       '<table role="presentation" cellpadding="0" cellspacing="0"><tr>' +
         '<td style="padding:0 10px 10px 0"><a href="tel:+447375355233" style="display:inline-block;background:' + (state === 'book' ? '#1E4C6B' : '#00A34A') + ';color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">Call to book: 07375 355233</a></td>' +
         '<td style="padding:0 0 10px 0"><a href="https://wa.me/447375355233?text=' + encodeURIComponent("Hi MB Storage, I've just received my quote and I'd like to go ahead.") + '" style="display:inline-block;background:#25D366;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;font-size:15px">WhatsApp us</a></td>' +
       '</tr></table>' +
-      '<p style="margin:12px 0 0;font-size:14px;color:#5b5648;line-height:1.6">' + (state === 'full' ? 'Reply to this email, WhatsApp us or give us a call and we\'ll add you to the waiting list.' : (state === 'book' ? 'Spaces like this don\'t hang around long. Book online above, reply to this email, WhatsApp us or give us a call and we\'ll get you moved in - often the same day.' : 'Reply to this email, WhatsApp us or give us a call and we\'ll get you moved in - often the same day.')) + '</p>' +
+      '<p style="margin:12px 0 0;font-size:14px;color:#5b5648;line-height:1.6">' + ((state === 'full' || state === 'later-full') ? 'Reply to this email, WhatsApp us or give us a call and we\'ll add you to the waiting list.' : (state === 'book' ? 'Spaces like this don\'t hang around long. Book online above, reply to this email, WhatsApp us or give us a call and we\'ll get you moved in - often the same day.' : 'Reply to this email, WhatsApp us or give us a call and we\'ll get you moved in - often the same day.')) + '</p>' +
     '</td></tr>' +
     '<tr><td style="background:#22190A;padding:18px 28px;color:#cfc9bd;font-size:12px">' +
       'MB Storage &middot; <a href="tel:+447375355233" style="color:#cfc9bd">07375 355233</a> &middot; ' +
@@ -349,7 +374,7 @@ function customerText(name, u, incVat, d, state, altSite) {
 
   var lines = [
     'Hi ' + name + ',', '',
-    (state === 'full'
+    ((state === 'full' || state === 'later-full')
       ? (altSite
           ? 'This size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + d.preferred_site : '') + ' - but we do have availability at ' + altSite + ' if you\'d like to consider that instead. Here is your personalised quote below.'
           : 'Thanks for getting in touch - this size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + d.preferred_site : '') + ', but here is your personalised quote below so you\'re all set the moment a space frees up (and units do free up regularly).')
@@ -388,14 +413,18 @@ function customerText(name, u, incVat, d, state, altSite) {
     (state === 'later' ? '----------------------------------------' : null),
     (state === 'later' ? 'Your preferred move-in date is more than 3 days away, and because availability is limited we only take firm bookings up to 3 days before move-in. Don\'t worry - this quote is valid for 30 days. Reply to this email or call 07375 355233 nearer the time and we\'ll get you booked in.' : null),
     (state === 'later' ? '' : null),
-    (state === 'full' ? 'CURRENTLY FULLY BOOKED' : null),
-    (state === 'full' ? '----------------------------------------' : null),
-    (state === 'full' ? 'This size is in high demand and currently fully booked - but units free up all the time. Your quote is valid for 30 days.' : null),
-    (state === 'full' ? '' : null),
-    (state === 'full' ? 'Join the waiting list and we\'ll email you automatically the moment a space frees up:' : null),
-    (state === 'full' ? waitlistUrl(d) : null),
-    (state === 'full' ? '' : null),
-    (state === 'full'
+    ((state === 'full' || state === 'later-full') ? 'CURRENTLY FULLY BOOKED' : null),
+    ((state === 'full' || state === 'later-full') ? '----------------------------------------' : null),
+    (state === 'later-full'
+      ? 'Your preferred move-in date is more than 3 days away, and this size is currently fully booked' + (d.preferred_site && d.preferred_site !== 'Either is fine' ? ' at ' + d.preferred_site : '') + ' too - but units free up all the time, and online booking opens again 3 days before move-in. Your quote is valid for 30 days.'
+      : (state === 'full' ? 'This size is in high demand and currently fully booked - but units free up all the time. Your quote is valid for 30 days.' : null)),
+    ((state === 'full' || state === 'later-full') ? '' : null),
+    (altSite ? 'Prefer to try ' + altSite + ' instead? Get a quote: ' + altSiteQuoteUrl(d, altSite) : null),
+    (altSite ? '' : null),
+    ((state === 'full' || state === 'later-full') ? 'Join the waiting list and we\'ll email you automatically the moment a space frees up:' : null),
+    ((state === 'full' || state === 'later-full') ? waitlistUrl(d) : null),
+    ((state === 'full' || state === 'later-full') ? '' : null),
+    ((state === 'full' || state === 'later-full')
       ? 'Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we\'ll add you to the waiting list.'
       : "Spaces like this don't hang around long. Reply to this email, WhatsApp us on 07375 355233 (https://wa.me/447375355233) or give us a call and we'll get you moved in - often the same day."), '',
     'Kind regards,', 'MB Storage',
@@ -454,7 +483,7 @@ exports.handler = async function (event) {
 
   var state = await bookingState(d);
   console.log('Quote email booking panel state:', state);
-  var altSite = state === 'full' ? await altSiteWithAvailability(d) : null;
+  var altSite = (state === 'full' || state === 'later-full') ? await altSiteWithAvailability(d) : null;
 
   var send = makeSender();
 

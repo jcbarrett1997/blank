@@ -78,6 +78,7 @@ function bookingUrl(q) {
   if (q.name) p.set('name', q.name);
   if (q.email) p.set('email', q.email);
   if (q.phone) p.set('phone', q.phone);
+  if (q.move_in_date) p.set('move_in_date', String(q.move_in_date).slice(0, 20));
   return SITE + '/book.html?' + p.toString();
 }
 
